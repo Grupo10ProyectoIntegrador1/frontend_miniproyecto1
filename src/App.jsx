@@ -7,6 +7,7 @@ import api from './services/api'
 function App() {
   const [count, setCount] = useState(0)
   const [backendMessage, setBackendMessage] = useState('')
+  const [dbStatus, setDbStatus] = useState(null)
 
   useEffect(() => {
     api.get('/health/')
@@ -18,6 +19,18 @@ function App() {
         setBackendMessage('Error connecting to backend')
       })
   }, [])
+
+  const testDbConnection = () => {
+    setDbStatus('Testing...')
+    api.get('/test-db/')
+      .then(response => {
+        setDbStatus(response.data.message)
+      })
+      .catch(error => {
+        console.error('Error connecting to DB:', error)
+        setDbStatus('Error connecting to DB: ' + error.message)
+      })
+  }
 
   return (
     <>
@@ -32,6 +45,14 @@ function App() {
       <h1>Vite + React</h1>
       <div className="card">
         <p>Backend Status: {backendMessage}</p>
+
+        <div style={{ margin: '20px 0', padding: '10px', border: '1px solid #ccc', borderRadius: '8px' }}>
+          <button onClick={testDbConnection}>
+            Test Supabase DB Connection
+          </button>
+          {dbStatus && <p><strong>DB Status:</strong> {dbStatus}</p>}
+        </div>
+
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
