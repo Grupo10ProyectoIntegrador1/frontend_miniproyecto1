@@ -10,7 +10,7 @@ function App() {
   const [dbStatus, setDbStatus] = useState(null)
 
   useEffect(() => {
-    api.get('/health/')
+    api.get('/api/health/')
       .then(response => {
         setBackendMessage(response.data.message)
       })
@@ -22,7 +22,7 @@ function App() {
 
   const testDbConnection = () => {
     setDbStatus('Testing...')
-    api.get('/test-db/')
+    api.get('/api/test-db/')
       .then(response => {
         setDbStatus(response.data.message)
       })
