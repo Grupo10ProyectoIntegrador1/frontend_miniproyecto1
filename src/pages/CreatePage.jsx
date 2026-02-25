@@ -42,7 +42,7 @@ function CreatePage() {
         course: form.course,
         due_date: form.due_date,
         weight: form.weight !== '' ? parseFloat(form.weight) : null,
-        user_id: null,
+        user_id: 1,
       }
       await createActivity(payload)
       navigate('/hoy')
