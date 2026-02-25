@@ -9,53 +9,18 @@ import {
     Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getActivities } from '../services/activityService';
+import { useActivities } from '../hooks/useActivities';
+
+const ACTIVITY_TYPES_MAP = {
+    'exam': 'Examen',
+    'quiz': 'Quiz',
+    'project': 'Proyecto',
+    'homework': 'Tarea',
+    'presentation': 'Presentación'
+};
 
 const ProgressPage = () => {
-    const [viewState, setViewState] = useState('loading'); // 'loading', 'success', 'empty', 'error'
-    const [activities, setActivities] = useState([]);
-
-    useEffect(() => {
-        const loadData = async () => {
-            setViewState('loading');
-            try {
-
-                // En un escenario real
-                // await getActivities();
-                // Simulacion de carga de datos ( implementar api)
-                await new Promise(resolve => setTimeout(resolve, 1200));
-
-                const dummyActivities = [
-                    { id: 1, name: 'Actividad 1', course: 'curso1', completed: 2, total: 3, type: 'Examen' },
-                    { id: 2, name: 'Actividad 2', course: 'curso2', completed: 4, total: 4, type: 'Examen' },
-                    { id: 3, name: 'Actividad 3', course: 'curso3', completed: 1, total: 4, type: 'Examen' },
-                ];
-
-                setActivities(dummyActivities);
-                setViewState(dummyActivities.length > 0 ? 'success' : 'empty');
-            } catch (err) {
-                setViewState('error');
-            }
-        };
-
-        loadData();
-    }, []);
-
-    // Calcular estadísticas dinámicamente
-    const calculateStats = () => {
-        const totalTasks = activities.reduce((acc, act) => acc + act.total, 0);
-        const completedTasks = activities.reduce((acc, act) => acc + act.completed, 0);
-        const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 1000) / 10 : 0;
-
-        return {
-            total: totalTasks,
-            completed: completedTasks,
-            percentage: percentage,
-            activityCount: activities.length
-        };
-    };
-
-    const stats = calculateStats();
+    const { activities, viewState, stats } = useActivities();
 
     const renderHeader = () => (
         <div className="flex justify-between items-center mb-8 border-b border-zinc-100 pb-4">
@@ -153,18 +118,18 @@ const ProgressPage = () => {
                         <div key={activity.id} className="bg-white border border-zinc-100 rounded-xl p-6 hover:shadow-md transition-all duration-300">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="text-lg font-bold text-zinc-900">{activity.name}</h3>
+                                    <h3 className="text-lg font-bold text-zinc-900">{activity.title || activity.name}</h3>
                                     <p className="text-zinc-400 text-xs font-medium uppercase tracking-tight">{activity.course}</p>
                                 </div>
                                 <span className="bg-zinc-50 text-zinc-500 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded border border-zinc-100 font-bold">
-                                    {activity.type}
+                                    {ACTIVITY_TYPES_MAP[activity.type] || activity.type}
                                 </span>
                             </div>
-                            <p className="text-zinc-500 text-sm mb-2 font-medium">{activity.completed}/{activity.total} tareas</p>
+                            <p className="text-zinc-500 text-sm mb-2 font-medium">{(activity.completed || 0)}/{(activity.total || 0)} tareas</p>
                             <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden mb-4">
                                 <div
                                     className="h-full bg-blue-600 transition-all duration-1000"
-                                    style={{ width: `${(activity.completed / activity.total) * 100}%` }}
+                                    style={{ width: `${activity.total > 0 ? (activity.completed / activity.total) * 100 : 0}%` }}
                                 ></div>
                             </div>
                             <Link to={`/actividad/${activity.id}`} className="text-zinc-500 hover:text-blue-600 text-xs font-bold flex items-center gap-1.5 transition-colors group">
