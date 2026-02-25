@@ -2,6 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createActivity } from '../services/activityService'
 
+
+const today = new Date()
+today.setHours(0, 0, 0, 0)
+const todayStr = today.toISOString().split('T')[0]
+
 const ACTIVITY_TYPES = [
   { value: 'exam', label: 'Examen' },
   { value: 'quiz', label: 'Quiz' },
@@ -18,27 +23,66 @@ const INITIAL_FORM = {
   weight: '',
 }
 
+// Validaciones del frontend — retorna un objeto con los errores encontrados
+const validateForm = (form) => {
+  const errors = {}
+
+  if (!form.title.trim()) {
+    errors.title = 'El título es obligatorio.'
+  }
+
+  if (!form.type) {
+    errors.type = 'Debes seleccionar un tipo de actividad.'
+  }
+
+  if (!form.due_date) {
+    errors.due_date = 'La fecha límite es obligatoria.'
+  }
+
+  if (form.weight !== '') {
+    const w = parseFloat(form.weight)
+    if (isNaN(w) || w < 0 || w > 100) {
+      errors.weight = 'El peso debe ser un número entre 0 y 100.'
+    }
+  }
+
+  return errors
+}
+
+
 function CreatePage() {
   const navigate = useNavigate()
   const [form, setForm] = useState(INITIAL_FORM)
+  const [fieldErrors, setFieldErrors] = useState({}) // Errores por campo
+  const [serverError, setServerError] = useState(null) // Error general del backend
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
+    // Limpia el error del campo cuando el usuario empieza a corregirlo
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: null }))
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
+    setServerError(null)
 
+    // Validación frontend
+    const errors = validateForm(form)
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return // No manda nada al backend si hay errores
+    }
+
+    setLoading(true)
     try {
       const payload = {
-        title: form.title,
+        title: form.title.trim(),
         type: form.type,
-        course: form.course,
+        course: form.course.trim() || null,
         due_date: form.due_date,
         weight: form.weight !== '' ? parseFloat(form.weight) : null,
         user_id: null,
@@ -46,7 +90,14 @@ function CreatePage() {
       await createActivity(payload)
       navigate('/hoy')
     } catch (err) {
-      setError('Ocurrió un error al crear la actividad. Intenta de nuevo.')
+      // Intenta mostrar el mensaje específico que manda Django
+      const data = err.response?.data
+      if (data?.errors) {
+        // El backend mandó errores por campo, los mapeamos
+        setFieldErrors(data.errors)
+      } else {
+        setServerError('Ocurrió un error al crear la actividad. Intenta de nuevo.')
+      }
     } finally {
       setLoading(false)
     }
@@ -72,9 +123,12 @@ function CreatePage() {
               value={form.title}
               onChange={handleChange}
               placeholder="Ej: Parcial de Cálculo"
-              required
-              className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+              className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                ${fieldErrors.title ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
             />
+            {fieldErrors.title && (
+              <p className="text-red-500 text-xs mt-1">{fieldErrors.title}</p>
+            )}
           </div>
 
           {/* Tipo y Curso */}
@@ -85,20 +139,23 @@ function CreatePage() {
                 name="type"
                 value={form.type}
                 onChange={handleChange}
-                required
-                className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+                className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                  ${fieldErrors.type ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
               >
                 <option value="">Selecciona un tipo</option>
                 {ACTIVITY_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
+                  <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
               </select>
+              {fieldErrors.type && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.type}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm text-gray-700 font-medium">Curso <span className="text-gray-400">(opcional)</span> </label>
+              <label className="text-sm text-gray-700 font-medium">
+                Curso <span className="text-gray-400">(opcional)</span>
+              </label>
               <input
                 type="text"
                 name="course"
@@ -119,9 +176,13 @@ function CreatePage() {
                 name="due_date"
                 value={form.due_date}
                 onChange={handleChange}
-                required
-                className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+                min={todayStr}
+                className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                  ${fieldErrors.due_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
               />
+              {fieldErrors.due_date && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.due_date}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
@@ -134,16 +195,18 @@ function CreatePage() {
                 value={form.weight}
                 onChange={handleChange}
                 placeholder="Ej: 30"
-                min="0"
-                max="100"
-                className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+                className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                  ${fieldErrors.weight ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
               />
+              {fieldErrors.weight && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.weight}</p>
+              )}
             </div>
           </div>
 
-          {/* Error */}
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
+          {/* Error general del servidor */}
+          {serverError && (
+            <p className="text-red-500 text-sm">{serverError}</p>
           )}
 
           {/* Botón */}
