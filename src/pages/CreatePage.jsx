@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ChevronDown, Calendar } from 'lucide-react'
 import { createActivity } from '../services/activityService'
 
 const ACTIVITY_TYPES = [
@@ -81,20 +82,25 @@ function CreatePage() {
           <div className="flex gap-4">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-sm text-gray-700 font-medium">Tipo *</label>
-              <select
-                name="type"
-                value={form.type}
-                onChange={handleChange}
-                required
-                className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
-              >
-                <option value="">Selecciona un tipo</option>
-                {ACTIVITY_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  name="type"
+                  value={form.type}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-gray-50 text-gray-900 rounded-lg pl-4 pr-10 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors appearance-none cursor-pointer"
+                >
+                  <option value="">Selecciona un tipo</option>
+                  {ACTIVITY_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <ChevronDown size={16} />
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
@@ -114,14 +120,19 @@ function CreatePage() {
           <div className="flex gap-4">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-sm text-gray-700 font-medium">Fecha límite *</label>
-              <input
-                type="date"
-                name="due_date"
-                value={form.due_date}
-                onChange={handleChange}
-                required
-                className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  name="due_date"
+                  value={form.due_date}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-gray-50 text-gray-900 rounded-lg pl-4 pr-10 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <Calendar size={16} />
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
