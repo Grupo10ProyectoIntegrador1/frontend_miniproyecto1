@@ -9,12 +9,12 @@ export const createActivity = async (activityData) => {
 //Get /api/activities/
 export const getActivities = async () => {
     const response = await api.get('/activities/')
-    return response.data
+    return response.data.data  // el objeto que devuelve es un array
 }
 
 //Get /api/activities/:id
 export const getActivitiesById = async (id) => {
     const response = await api.get(`/activities/${id}/`)
-    return response.data
+    return response.data.data  // el objeto que devuelve es un array
 }
 
