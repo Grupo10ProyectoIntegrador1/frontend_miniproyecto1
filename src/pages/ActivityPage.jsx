@@ -11,8 +11,9 @@ import {
     AlertCircle,
     LayoutList
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useActivities } from '../hooks/useActivities';
+import { deleteActivity } from '../services/activityService';
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -23,7 +24,22 @@ const ACTIVITY_TYPES_MAP = {
 };
 
 const ActivityPage = () => {
-    const { activities = [], viewState } = useActivities();
+    const { activities = [], viewState, reload } = useActivities();
+    const navigate = useNavigate()
+    const [deletingId, setDeletingId] = React.useState(null)
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('¿Estás seguro de que deseas eliminar esta actividad?')) return
+        setDeletingId(id)
+        try {
+            await deleteActivity(id)
+            reload() // Recarga la lista después de eliminar
+        } catch (err) {
+            alert('Ocurrió un error al eliminar la actividad. Intenta de nuevo.')
+        } finally {
+            setDeletingId(null)
+        }
+    }
 
     const renderHeader = () => (
     <div className="flex justify-between items-start mb-10 pb-6 border-b border-zinc-100">
@@ -113,14 +129,25 @@ const ActivityPage = () => {
                             </div>
 
                             <div className="flex gap-3 mt-6 pt-4 border-t border-zinc-50">
-                                <Link to={`/actividad/${activity.id}`} className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-blue-600 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg">
+                                <Link 
+                                    to={`/actividad/${activity.id}`} 
+                                    className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-blue-600 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg"
+                                >
                                     <Eye size={14} /> Ver
                                 </Link>
-                                <button className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg">
+                                <Link 
+                                    to={`/actividad/${activity.id}`}
+                                    className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg"
+                                >
                                     <Pencil size={14} /> Editar
-                                </button>
-                                <button className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg">
-                                    <Trash2 size={14} /> Eliminar
+                                </Link>
+                                <button 
+                                    onClick={() => handleDelete(activity.id)}
+                                    disabled={deletingId === activity.id}
+                                    className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                                >
+                                    <Trash2 size={14} /> 
+                                    {deletingId === activity.id ? 'Eliminando...' : 'Eliminar'}
                                 </button>
                             </div>
                         </div>
