@@ -20,7 +20,7 @@ export const getActivitiesById = async (id) => {
 
 // Put /api/activities/:id
 export const updateActivity = async (id, activityData) => {
-    const response = await api.put(`/activities/${id}`, activityData)
+    const response = await api.put(`/activities/${id}/`, activityData)
     return response.data
 }
 
