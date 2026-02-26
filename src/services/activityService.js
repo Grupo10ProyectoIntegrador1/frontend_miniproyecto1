@@ -8,7 +8,7 @@ export const createActivity = async (activityData) => {
 
 //Get /api/activities/
 export const getActivities = async () => {
-    const response = await api.get('/activities/')
+    const response = await api.get('api/activities/')
     return response.data.data  // el objeto que devuelve es un array
 }
 

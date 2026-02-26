@@ -4,6 +4,7 @@ import { CalendarDays, PlusCircle, BarChart2, LogIn } from "lucide-react";
 const navItems = [
     { to: '/hoy', label: 'Hoy', icon: CalendarDays },
     { to: '/crear', label: 'Crear actividad', icon: PlusCircle },
+    { to: '/actividades', label: 'Actividades', icon: BarChart2 },
     { to: '/progreso', label: 'Progreso', icon: BarChart2 },
 ]
 
