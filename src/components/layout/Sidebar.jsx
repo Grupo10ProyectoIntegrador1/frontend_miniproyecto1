@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { CalendarDays, PlusCircle, BarChart2, LogIn } from "lucide-react";
+import { CalendarDays, PlusCircle, BarChart2, LogIn, LayoutList } from "lucide-react";
 
 const navItems = [
     { to: '/hoy', label: 'Hoy', icon: CalendarDays },
     { to: '/crear', label: 'Crear actividad', icon: PlusCircle },
+    { to: '/actividades', label: 'Actividades', icon: LayoutList },
     { to: '/progreso', label: 'Progreso', icon: BarChart2 },
 ]
 

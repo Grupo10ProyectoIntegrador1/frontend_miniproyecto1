@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './styles/App.css'
 import MainLayout from './components/layout/MainLayout'
 import CreatePage from './pages/CreatePage'
+import ActivityPage from './pages/ActivityPage'
 import ProgressPage from './pages/ProgressPage'
 
 
@@ -17,6 +18,7 @@ function App() {
           <Route path="/hoy" element={<div>Hoy - Próximamente</div>} />
           <Route path="/crear" element={<CreatePage />} />
           <Route path="/actividad/:id" element={<div>Detalle - Próximamente</div>} />
+          <Route path="/actividades" element={<ActivityPage />} />
           <Route path="/progreso" element={<ProgressPage />} />
         </Route>
         {/*Por si ingresan una ruta mal puesta*/}
