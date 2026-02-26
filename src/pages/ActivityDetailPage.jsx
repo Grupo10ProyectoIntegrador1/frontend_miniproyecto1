@@ -190,7 +190,7 @@ function ActivityDetailPage() {
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm text-gray-700 font-medium">Curso *</label>
+              <label className="text-sm text-gray-700 font-medium">Curso <span className="text-gray-400">(opcional)</span></label>
               <input
                 type="text"
                 name="course"

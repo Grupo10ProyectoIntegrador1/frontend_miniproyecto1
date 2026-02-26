@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 
+const today = new Date()
+today.setHours(0, 0, 0, 0)
+const todayStr = today.toISOString().split('T')[0]  // ← esto faltaba
+
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
   { value: 'in_progress', label: 'En progreso' },
@@ -49,13 +53,15 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData }) => {
     }
     if (!form.target_date) {
       errors.target_date = 'La fecha objetivo es obligatoria.'
+    } else if (form.target_date < todayStr) {
+      errors.target_date = 'La fecha objetivo debe ser mayor o igual a hoy.'
     }
     if (!form.estimated_hours) {
       errors.estimated_hours = 'Las horas estimadas son obligatorias.'
     } else {
       const h = parseFloat(form.estimated_hours)
-      if (isNaN(h) || h <= 0) {
-        errors.estimated_hours = 'Las horas estimadas deben ser un número mayor a 0.'
+      if (isNaN(h) || h <= 0 || h > 16) {
+        errors.estimated_hours = 'Las horas estimadas deben ser un número entre 0 y 16.'
       }
     }
     return errors
@@ -131,7 +137,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData }) => {
           />
         </div>
 
-        {/* Fecha objetivo - OBLIGATORIA */}
+        {/* Fecha objetivo */}
         <div className="flex flex-col gap-1 flex-1">
           <label className="text-xs font-medium text-gray-700">Fecha objetivo *</label>
           <input
@@ -147,7 +153,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData }) => {
           )}
         </div>
 
-        {/* Horas estimadas - OBLIGATORIAS */}
+        {/* Horas estimadas */}
         <div className="flex flex-col gap-1 flex-1">
           <label className="text-xs font-medium text-gray-700">Horas estimadas *</label>
           <input
