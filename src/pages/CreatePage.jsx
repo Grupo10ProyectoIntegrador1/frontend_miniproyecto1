@@ -89,7 +89,7 @@ function CreatePage() {
         user_id: 1,
       }
       await createActivity(payload)
-      navigate('/hoy')
+      navigate('/actividades')
     } catch (err) {
       // Intenta mostrar el mensaje específico que manda Django
       const data = err.response?.data
