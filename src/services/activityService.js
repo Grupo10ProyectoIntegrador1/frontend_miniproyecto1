@@ -25,7 +25,7 @@ export const updateActivity = async (id, activityData) => {
 }
 
 // Delete /api/activities/:id
-export const daleteActivity = async (id) => {
-    const response = await api.delete(`/activities/${id}`)
-    return response.data
+export const deleteActivity = async (id) => {
+  const response = await api.delete(`/activities/${id}/`)
+  return response.data
 }

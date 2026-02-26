@@ -4,6 +4,7 @@ import MainLayout from './components/layout/MainLayout'
 import CreatePage from './pages/CreatePage'
 import ActivityPage from './pages/ActivityPage'
 import ProgressPage from './pages/ProgressPage'
+import ActivityDetailPage from './pages/ActivityDetailPage'
 
 
 function App() {
@@ -17,7 +18,7 @@ function App() {
           <Route path="/" element={<Navigate to="/hoy" replace />} />
           <Route path="/hoy" element={<div>Hoy - Próximamente</div>} />
           <Route path="/crear" element={<CreatePage />} />
-          <Route path="/actividad/:id" element={<div>Detalle - Próximamente</div>} />
+          <Route path="/actividad/:id" element={< ActivityDetailPage />} />
           <Route path="/actividades" element={<ActivityPage />} />
           <Route path="/progreso" element={<ProgressPage />} />
         </Route>

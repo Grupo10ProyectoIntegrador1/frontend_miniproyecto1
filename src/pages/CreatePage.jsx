@@ -105,14 +105,16 @@ function CreatePage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto mt-10">
+    <div className="max-w-2xl mx-auto mt-10">
 
-      {/* Header */}
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Crear nueva actividad</h1>
-      <p className="text-gray-500 text-sm mb-8">Completa los datos de tu actividad evaluativa</p>
+      {/* Header centrado */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Crear nueva actividad</h1>
+        <p className="text-gray-500 text-sm">Completa los datos de tu actividad evaluativa</p>
+      </div>
 
       {/* Formulario */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
           {/* Título */}
@@ -124,7 +126,7 @@ function CreatePage() {
               value={form.title}
               onChange={handleChange}
               placeholder="Ej: Parcial de Cálculo"
-              className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+              className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-3 text-sm outline-none border transition-colors
                 ${fieldErrors.title ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
             />
             {fieldErrors.title && (
@@ -132,47 +134,50 @@ function CreatePage() {
             )}
           </div>
 
-          {/* Tipo y Curso */}
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm text-gray-700 font-medium">Tipo *</label>
-              <div className="relative">
-                <select
-                  name="type"
-                  value={form.type}
-                  onChange={handleChange}
-                  required
-                  className="w-full bg-gray-50 text-gray-900 rounded-lg pl-4 pr-10 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors appearance-none cursor-pointer"
-                >
-                  <option value="">Selecciona un tipo</option>
-                  {ACTIVITY_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <ChevronDown size={16} />
-                </div>
+          {/* Tipo */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-gray-700 font-medium">Tipo *</label>
+            <div className="relative">
+              <select
+                name="type"
+                value={form.type}
+                onChange={handleChange}
+                className={`w-full bg-gray-50 text-gray-900 rounded-lg pl-4 pr-10 py-3 text-sm outline-none border transition-colors appearance-none cursor-pointer
+                  ${fieldErrors.type ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
+              >
+                <option value="">Selecciona un tipo</option>
+                {ACTIVITY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                <ChevronDown size={16} />
               </div>
             </div>
-
-            <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm text-gray-700 font-medium">
-                Curso <span className="text-gray-400">(opcional)</span>
-              </label>
-              <input
-                type="text"
-                name="course"
-                value={form.course}
-                onChange={handleChange}
-                placeholder="Ej: Cálculo III"
-                className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
-              />
-            </div>
+            {fieldErrors.type && (
+              <p className="text-red-500 text-xs mt-1">{fieldErrors.type}</p>
+            )}
           </div>
 
-          {/* Fecha y Peso */}
+          {/* Curso */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-gray-700 font-medium">
+              Curso <span className="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              name="course"
+              value={form.course}
+              onChange={handleChange}
+              placeholder="Ej: Cálculo III"
+              className="bg-gray-50 text-gray-900 rounded-lg px-4 py-3 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+            />
+          </div>
+
+          {/* Separador */}
+          <hr className="border-gray-100" />
+
+          {/* Fecha y Peso en la misma fila */}
           <div className="flex gap-4">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-sm text-gray-700 font-medium">Fecha límite *</label>
@@ -182,18 +187,22 @@ function CreatePage() {
                   name="due_date"
                   value={form.due_date}
                   onChange={handleChange}
-                  required
-                  className="w-full bg-gray-50 text-gray-900 rounded-lg pl-4 pr-10 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
+                  min={todayStr}
+                  className={`w-full bg-gray-50 text-gray-900 rounded-lg pl-4 pr-10 py-3 text-sm outline-none border transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0
+                    ${fieldErrors.due_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                   <Calendar size={16} />
                 </div>
               </div>
+              {fieldErrors.due_date && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.due_date}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-sm text-gray-700 font-medium">
-                Peso <span className="text-gray-400">(opcional)</span>
+                Peso <span className="text-gray-400 font-normal">(opcional)</span>
               </label>
               <input
                 type="number"
@@ -201,7 +210,7 @@ function CreatePage() {
                 value={form.weight}
                 onChange={handleChange}
                 placeholder="Ej: 30"
-                className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-3 text-sm outline-none border transition-colors
                   ${fieldErrors.weight ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
               />
               {fieldErrors.weight && (
@@ -212,14 +221,16 @@ function CreatePage() {
 
           {/* Error general del servidor */}
           {serverError && (
-            <p className="text-red-500 text-sm">{serverError}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <p className="text-red-500 text-sm">{serverError}</p>
+            </div>
           )}
 
           {/* Botón */}
           <button
             type="submit"
             disabled={loading}
-            className="bg-blue-600 text-white font-semibold rounded-lg py-2 px-6 text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full bg-blue-600 text-white font-semibold rounded-lg py-3 text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
             {loading ? 'Creando...' : 'Crear actividad'}
           </button>
