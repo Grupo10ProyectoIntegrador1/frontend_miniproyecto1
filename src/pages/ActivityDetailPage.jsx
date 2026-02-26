@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useActivity } from '../hooks/useActivity'
+import { useSubtasks } from '../hooks/useSubtasks'
 import { updateActivity, deleteActivity } from '../services/activityService'
+import SubtaskCard from '../components/activities/SubtaskCard'
+import SubtaskForm from '../components/activities/SubtaskForm'
 
 const ACTIVITY_TYPES = [
   { value: 'exam', label: 'Examen' },
@@ -17,9 +20,10 @@ today.setHours(0, 0, 0, 0)
 const todayStr = today.toISOString().split('T')[0]
 
 function ActivityDetailPage() {
-  const { id } = useParams() // Obtiene el :id de la URL
+  const { id } = useParams()
   const navigate = useNavigate()
   const { activity, viewState, reload } = useActivity(id)
+  const { subtasks, loading: subtaskLoading, error: subtaskError, addSubtask, editSubtask, removeSubtask } = useSubtasks(activity)
 
   const [form, setForm] = useState({
     title: '',
@@ -33,6 +37,9 @@ function ActivityDetailPage() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({}) // ← agregar esto
+  const [showForm, setShowForm] = useState(false)
+  const [editingSubtask, setEditingSubtask] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
   // Cuando carga la actividad, llena el formulario con sus datos
   useEffect(() => {
@@ -105,6 +112,23 @@ function ActivityDetailPage() {
       setError('Ocurrió un error al eliminar la actividad.')
       setDeleting(false)
     }
+  }
+
+  const handleAddSubtask = async (data) => {
+    const ok = await addSubtask(data)
+    if (ok) setShowForm(false)
+  }
+
+  const handleEditSubtask = async (data) => {
+    const ok = await editSubtask(editingSubtask.id, data)
+    if (ok) setEditingSubtask(null)
+  }
+
+  const handleDeleteSubtask = async (subtaskId) => {
+    if (!window.confirm('¿Eliminar esta subtarea?')) return
+    setDeletingId(subtaskId)
+    await removeSubtask(subtaskId)
+    setDeletingId(null)
   }
 
   // Estados de carga
@@ -244,15 +268,67 @@ function ActivityDetailPage() {
         </form>
       </div>
 
-      {/* Subtareas — próximamente */}
+      {/* Subtareas */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Subtareas</h2>
-          <button className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-            + Agregar subtarea
-          </button>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Subtareas
+            {subtasks.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-gray-400">({subtasks.length})</span>
+            )}
+          </h2>
+          {!showForm && !editingSubtask && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              + Agregar subtarea
+            </button>
+          )}
         </div>
-        <p className="text-gray-400 text-sm">Las subtareas se agregarán próximamente.</p>
+
+        {/* Error de subtareas */}
+        {subtaskError && (
+          <p className="text-red-500 text-sm mb-4">{subtaskError}</p>
+        )}
+
+        {/* Formulario crear */}
+        {showForm && (
+          <div className="mb-4">
+            <SubtaskForm
+              onSubmit={handleAddSubtask}
+              onCancel={() => setShowForm(false)}
+              loading={subtaskLoading}
+            />
+          </div>
+        )}
+
+        {/* Lista de subtareas */}
+        {subtasks.length === 0 && !showForm ? (
+          <p className="text-gray-400 text-sm">No hay subtareas aún. ¡Agrega una!</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {subtasks.map((subtask) => (
+              editingSubtask?.id === subtask.id ? (
+                <SubtaskForm
+                  key={subtask.id}
+                  initialData={editingSubtask}
+                  onSubmit={handleEditSubtask}
+                  onCancel={() => setEditingSubtask(null)}
+                  loading={subtaskLoading}
+                />
+              ) : (
+                <SubtaskCard
+                  key={subtask.id}
+                  subtask={subtask}
+                  onEdit={(s) => { setEditingSubtask(s); setShowForm(false) }}
+                  onDelete={handleDeleteSubtask}
+                  deleting={deletingId === subtask.id}
+                />
+              )
+            ))}
+          </div>
+        )}
       </div>
 
     </div>

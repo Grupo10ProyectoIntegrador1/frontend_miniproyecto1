@@ -47,7 +47,12 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData }) => {
     if (!form.title.trim()) {
       errors.title = 'El título es obligatorio.'
     }
-    if (form.estimated_hours !== '') {
+    if (!form.target_date) {
+      errors.target_date = 'La fecha objetivo es obligatoria.'
+    }
+    if (!form.estimated_hours) {
+      errors.estimated_hours = 'Las horas estimadas son obligatorias.'
+    } else {
       const h = parseFloat(form.estimated_hours)
       if (isNaN(h) || h <= 0) {
         errors.estimated_hours = 'Las horas estimadas deben ser un número mayor a 0.'
@@ -67,10 +72,10 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData }) => {
     // Construye el payload limpio
     const payload = {
       title: form.title.trim(),
-      status: form.status,
+      target_date: form.target_date,
+      estimated_hours: parseFloat(form.estimated_hours),
       ...(form.description && { description: form.description.trim() }),
-      ...(form.target_date && { target_date: form.target_date }),
-      ...(form.estimated_hours !== '' && { estimated_hours: parseFloat(form.estimated_hours) }),
+      ...(initialData && { status: form.status }),
     }
 
     onSubmit(payload)
@@ -126,56 +131,57 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData }) => {
           />
         </div>
 
-        {/* Fecha y Horas en la misma fila */}
-        <div className="flex gap-3">
-          <div className="flex flex-col gap-1 flex-1">
-            <label className="text-xs font-medium text-gray-700">
-              Fecha objetivo <span className="text-gray-400 font-normal">(opcional)</span>
-            </label>
-            <input
-              type="date"
-              name="target_date"
-              value={form.target_date}
+        {/* Fecha objetivo - OBLIGATORIA */}
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-xs font-medium text-gray-700">Fecha objetivo *</label>
+          <input
+            type="date"
+            name="target_date"
+            value={form.target_date}
+            onChange={handleChange}
+            className={`bg-white rounded-lg px-3 py-2 text-sm outline-none border transition-colors
+              ${fieldErrors.target_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
+          />
+          {fieldErrors.target_date && (
+            <p className="text-red-500 text-xs">{fieldErrors.target_date}</p>
+          )}
+        </div>
+
+        {/* Horas estimadas - OBLIGATORIAS */}
+        <div className="flex flex-col gap-1 flex-1">
+          <label className="text-xs font-medium text-gray-700">Horas estimadas *</label>
+          <input
+            type="number"
+            name="estimated_hours"
+            value={form.estimated_hours}
+            onChange={handleChange}
+            placeholder="Ej: 2"
+            min="0"
+            step="0.5"
+            className={`bg-white rounded-lg px-3 py-2 text-sm outline-none border transition-colors
+              ${fieldErrors.estimated_hours ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
+          />
+          {fieldErrors.estimated_hours && (
+            <p className="text-red-500 text-xs">{fieldErrors.estimated_hours}</p>
+          )}
+        </div>
+
+        {/* Estado - SOLO en editar */}
+        {initialData && (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700">Estado</label>
+            <select
+              name="status"
+              value={form.status}
               onChange={handleChange}
               className="bg-white rounded-lg px-3 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
-            />
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
           </div>
-
-          <div className="flex flex-col gap-1 flex-1">
-            <label className="text-xs font-medium text-gray-700">
-              Horas estimadas <span className="text-gray-400 font-normal">(opcional)</span>
-            </label>
-            <input
-              type="number"
-              name="estimated_hours"
-              value={form.estimated_hours}
-              onChange={handleChange}
-              placeholder="Ej: 2"
-              min="0"
-              step="0.5"
-              className={`bg-white rounded-lg px-3 py-2 text-sm outline-none border transition-colors
-                ${fieldErrors.estimated_hours ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
-            />
-            {fieldErrors.estimated_hours && (
-              <p className="text-red-500 text-xs">{fieldErrors.estimated_hours}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Estado */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-700">Estado</label>
-          <select
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-            className="bg-white rounded-lg px-3 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
-          >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        </div>
+        )}
 
         {/* Botones */}
         <div className="flex gap-3 mt-1">
