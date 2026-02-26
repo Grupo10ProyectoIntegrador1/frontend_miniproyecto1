@@ -38,6 +38,8 @@ const validateForm = (form) => {
 
   if (!form.due_date) {
     errors.due_date = 'La fecha límite es obligatoria.'
+  } else if (form.due_date < todayStr) {
+    errors.due_date = 'La fecha límite debe ser mayor o igual a hoy.'
   }
 
   if (form.weight !== '') {
@@ -181,20 +183,14 @@ function CreatePage() {
           <div className="flex gap-4">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-sm text-gray-700 font-medium">Fecha límite *</label>
-              <div className="relative">
-                <input
-                  type="date"
-                  name="due_date"
-                  value={form.due_date}
-                  onChange={handleChange}
-                  min={todayStr}
-                  className={`w-full bg-gray-50 text-gray-900 rounded-lg pl-4 pr-10 py-3 text-sm outline-none border transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0
-                    ${fieldErrors.due_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <Calendar size={16} />
-                </div>
-              </div>
+              <input
+                type="date"
+                name="due_date"
+                value={form.due_date}
+                onChange={handleChange}
+                className={`w-full bg-gray-50 text-gray-900 rounded-lg px-4 py-3 text-sm outline-none border transition-colors cursor-pointer
+                  ${fieldErrors.due_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
+              />
               {fieldErrors.due_date && (
                 <p className="text-red-500 text-xs mt-1">{fieldErrors.due_date}</p>
               )}

@@ -12,6 +12,10 @@ const ACTIVITY_TYPES = [
   { value: 'presentation', label: 'Presentación' },
 ]
 
+const today = new Date()
+today.setHours(0, 0, 0, 0)
+const todayStr = today.toISOString().split('T')[0]
+
 function ActivityDetailPage() {
   const { id } = useParams() // Obtiene el :id de la URL
   const navigate = useNavigate()
@@ -28,30 +32,55 @@ function ActivityDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({}) // ← agregar esto
 
   // Cuando carga la actividad, llena el formulario con sus datos
   useEffect(() => {
     if (activity) {
+      const savedDate = activity.due_date || ''
+      // Si la fecha guardada es anterior a hoy, no la ponemos en el formulario
       setForm({
         title: activity.title || '',
         type: activity.type || '',
         course: activity.course || '',
-        due_date: activity.due_date || '',
+        due_date: savedDate >= todayStr ? savedDate : '',
         weight: activity.weight ?? '',
       })
+
+      // Si la fecha era pasada, avisamos al usuario
+      if (savedDate && savedDate < todayStr) {
+        setFieldErrors({ due_date: 'La fecha anterior ya venció. Por favor selecciona una nueva fecha.' })
+      }
     }
   }, [activity])
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
+    // Limpia el error del campo cuando el usuario lo corrige
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: null }))
+    }
   }
 
   const handleSave = async (e) => {
     e.preventDefault()
-    setSaving(true)
     setError(null)
     setSuccess(false)
+
+    // Validación de fecha
+    const errors = {}
+    if (!form.due_date) {
+      errors.due_date = 'La fecha límite es obligatoria.'
+    } else if (form.due_date < todayStr) {
+      errors.due_date = 'La fecha límite debe ser mayor o igual a hoy.'
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
+    setSaving(true)
     try {
       await updateActivity(id, {
         ...form,
@@ -157,9 +186,12 @@ function ActivityDetailPage() {
                 name="due_date"
                 value={form.due_date}
                 onChange={handleChange}
-                required
-                className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+                className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                  ${fieldErrors.due_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
               />
+              {fieldErrors.due_date && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.due_date}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
