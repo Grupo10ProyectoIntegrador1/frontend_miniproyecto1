@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useActivity } from '../hooks/useActivity'
 import { updateActivity, deleteActivity } from '../services/activityService'
+import Modal from '../components/Modal'
 
 const ACTIVITY_TYPES = [
   { value: 'exam', label: 'Examen' },
@@ -30,8 +31,13 @@ function ActivityDetailPage() {
   })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(false)
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+    onConfirm: null,
+  })
   const [fieldErrors, setFieldErrors] = useState({}) // ← agregar esto
 
   // Cuando carga la actividad, llena el formulario con sus datos
@@ -65,8 +71,6 @@ function ActivityDetailPage() {
 
   const handleSave = async (e) => {
     e.preventDefault()
-    setError(null)
-    setSuccess(false)
 
     // Validación de fecha
     const errors = {}
@@ -86,25 +90,57 @@ function ActivityDetailPage() {
         ...form,
         weight: form.weight !== '' ? parseFloat(form.weight) : null,
       })
-      setSuccess(true)
       reload() // Recarga la actividad desde el backend
+      setModalConfig({
+        isOpen: true,
+        type: 'success',
+        title: 'Actividad Editada',
+        message: 'La actividad ha sido editada de manera exitosa.',
+        onConfirm: null,
+      })
     } catch (err) {
-      setError('Ocurrió un error al guardar los cambios. Intenta de nuevo.')
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Ha ocurrido un error intentando editar la actividad. Inténtelo de nuevo.',
+        onConfirm: null,
+      })
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async () => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar esta actividad?')) return
-    setDeleting(true)
-    try {
-      await deleteActivity(id)
-      navigate('/hoy')
-    } catch (err) {
-      setError('Ocurrió un error al eliminar la actividad.')
-      setDeleting(false)
-    }
+  const handleDeleteClick = () => {
+    setModalConfig({
+      isOpen: true,
+      type: 'warning',
+      title: '¿Eliminar actividad?',
+      message: 'Esta acción eliminará la actividad y todas sus subtareas. No se puede deshacer.',
+      onConfirm: async () => {
+        setModalConfig((prev) => ({ ...prev, isOpen: false }))
+        setDeleting(true)
+        try {
+          await deleteActivity(id)
+          setModalConfig({
+            isOpen: true,
+            type: 'success',
+            title: 'Actividad Eliminada',
+            message: 'La actividad ha sido eliminada de manera exitosa junto con sus tareas.',
+            onConfirm: () => navigate('/hoy'),
+          })
+        } catch (err) {
+          setModalConfig({
+            isOpen: true,
+            type: 'error',
+            title: 'Error',
+            message: 'Ha ocurrido un error eliminando la actividad. Inténtelo de nuevo.',
+            onConfirm: null,
+          })
+          setDeleting(false)
+        }
+      },
+    })
   }
 
   // Estados de carga
@@ -209,9 +245,8 @@ function ActivityDetailPage() {
             </div>
           </div>
 
-          {/* Mensajes */}
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          {success && <p className="text-green-500 text-sm">¡Cambios guardados correctamente!</p>}
+          {/* Mensajes
+           Eliminados en favor del Modal. */}
 
           {/* Botones */}
           <div className="flex gap-3 mt-2">
@@ -233,7 +268,7 @@ function ActivityDetailPage() {
 
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               disabled={deleting}
               className="ml-auto text-red-500 font-semibold rounded-lg py-2 px-6 text-sm border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
             >
@@ -255,6 +290,14 @@ function ActivityDetailPage() {
         <p className="text-gray-400 text-sm">Las subtareas se agregarán próximamente.</p>
       </div>
 
+      <Modal
+        isOpen={modalConfig.isOpen}
+        onClose={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onConfirm={modalConfig.onConfirm}
+      />
     </div>
   )
 }
