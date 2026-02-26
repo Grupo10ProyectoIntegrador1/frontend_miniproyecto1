@@ -18,3 +18,14 @@ export const getActivitiesById = async (id) => {
     return response.data.data  // el objeto que devuelve es un array
 }
 
+// Put /api/activities/:id
+export const updateActivity = async (id, activityData) => {
+    const response = await api.put(`/activities/${id}`, activityData)
+    return response.data
+}
+
+// Delete /api/activities/:id
+export const daleteActivity = async (id) => {
+    const response = await api.delete(`/activities/${id}`)
+    return response.data
+}
