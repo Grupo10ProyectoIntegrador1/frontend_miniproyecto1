@@ -7,8 +7,9 @@ const todayStr = today.toISOString().split('T')[0]  // ← esto faltaba
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
-  { value: 'in_progress', label: 'En progreso' },
-  { value: 'completed', label: 'Completada' },
+  { value: 'done', label: 'Completada' },
+  { value: 'postponed', label: 'Postergada' },
+  { value: 'overdue', label: 'Vencida' },
 ]
 
 const EMPTY_FORM = {
