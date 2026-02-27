@@ -136,7 +136,7 @@ const ActivityPage = () => {
                                     <Eye size={14} /> Ver
                                 </Link>
                                 <Link 
-                                    to={`/actividad/${activity.id}`}
+                                    to={`/actividad/${activity.id}?edit=true`}
                                     className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg"
                                 >
                                     <Pencil size={14} /> Editar

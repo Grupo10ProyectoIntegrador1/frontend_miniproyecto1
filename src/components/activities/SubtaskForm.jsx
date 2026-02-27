@@ -19,7 +19,7 @@ const EMPTY_FORM = {
   status: 'pending',
 }
 
-const SubtaskForm = ({ onSubmit, onCancel, loading, initialData }) => {
+const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate }) => {
   const [form, setForm] = useState(EMPTY_FORM)
   const [fieldErrors, setFieldErrors] = useState({})
 
@@ -55,6 +55,8 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData }) => {
       errors.target_date = 'La fecha objetivo es obligatoria.'
     } else if (form.target_date < todayStr) {
       errors.target_date = 'La fecha objetivo debe ser mayor o igual a hoy.'
+    } else if (activityDueDate && form.target_date > activityDueDate) {
+      errors.target_date = `La fecha objetivo no puede ser mayor a la fecha límite de la actividad (${activityDueDate}).`
     }
     if (!form.estimated_hours) {
       errors.estimated_hours = 'Las horas estimadas son obligatorias.'
