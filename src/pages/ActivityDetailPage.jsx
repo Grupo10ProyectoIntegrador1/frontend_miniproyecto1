@@ -152,19 +152,78 @@ function ActivityDetailPage() {
 
   const handleAddSubtask = async (data) => {
     const ok = await addSubtask(data)
-    if (ok) setShowForm(false)
+    if (ok) {
+      setShowForm(false)
+      setModalConfig({
+        isOpen: true,
+        type: 'success',
+        title: '¡Subtarea creada!',
+        message: 'La subtarea fue creada correctamente.',
+        onConfirm: null,
+      })
+    } else {
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Ha ocurrido un error al crear la subtarea. Inténtelo de nuevo.',
+        onConfirm: null,
+      })
+    }
   }
 
   const handleEditSubtask = async (data) => {
     const ok = await editSubtask(editingSubtask.id, data)
-    if (ok) setEditingSubtask(null)
+    if (ok) {
+      setEditingSubtask(null)
+      setModalConfig({
+        isOpen: true,
+        type: 'success',
+        title: '¡Subtarea editada!',
+        message: 'La subtarea fue editada correctamente.',
+        onConfirm: null,
+      })
+    } else {
+      setModalConfig({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Ha ocurrido un error al editar la subtarea. Inténtelo de nuevo.',
+        onConfirm: null,
+      })
+    }
   }
 
   const handleDeleteSubtask = async (subtaskId) => {
-    if (!window.confirm('¿Eliminar esta subtarea?')) return
-    setDeletingId(subtaskId)
-    await removeSubtask(subtaskId)
-    setDeletingId(null)
+    setModalConfig({
+      isOpen: true,
+      type: 'warning',
+      title: '¿Eliminar subtarea?',
+      message: 'Esta acción eliminará la subtarea. No se puede deshacer.',
+      onConfirm: async () => {
+        setModalConfig((prev) => ({ ...prev, isOpen: false }))
+        setDeletingId(subtaskId)
+        const ok = await removeSubtask(subtaskId)
+        setDeletingId(null)
+        if (ok) {
+          setModalConfig({
+            isOpen: true,
+            type: 'success',
+            title: 'Subtarea eliminada',
+            message: 'La subtarea fue eliminada correctamente.',
+            onConfirm: null,
+          })
+        } else {
+          setModalConfig({
+            isOpen: true,
+            type: 'error',
+            title: 'Error',
+            message: 'Ha ocurrido un error al eliminar la subtarea. Inténtelo de nuevo.',
+            onConfirm: null,
+          })
+        }
+      },
+    })
   }
 
   // Estados de carga

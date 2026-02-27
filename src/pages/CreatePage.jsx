@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, Calendar } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { createActivity } from '../services/activityService'
+import Modal from '../components/Modal' // ← agregar import
 
 
 const today = new Date()
@@ -56,9 +57,10 @@ const validateForm = (form) => {
 function CreatePage() {
   const navigate = useNavigate()
   const [form, setForm] = useState(INITIAL_FORM)
-  const [fieldErrors, setFieldErrors] = useState({}) // Errores por campo
-  const [serverError, setServerError] = useState(null) // Error general del backend
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [serverError, setServerError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false) // ← agregar
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -73,7 +75,6 @@ function CreatePage() {
     e.preventDefault()
     setServerError(null)
 
-    // Validación frontend
     const errors = validateForm(form)
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
@@ -91,7 +92,7 @@ function CreatePage() {
         user_id: 1,
       }
       await createActivity(payload)
-      navigate('/actividades')
+      setShowSuccessModal(true) // ← mostrar modal en lugar de navegar directo
     } catch (err) {
       // Intenta mostrar el mensaje específico que manda Django
       const data = err.response?.data
@@ -108,6 +109,17 @@ function CreatePage() {
 
   return (
     <div className="max-w-2xl mx-auto mt-10">
+
+      {/* Modal éxito */}
+      <Modal
+        isOpen={showSuccessModal}
+        onClose={() => navigate('/actividades')}
+        onConfirm={() => navigate('/actividades')}
+        title="¡Actividad creada!"
+        message="La actividad fue creada correctamente."
+        type="success"
+        confirmText="Aceptar"
+      />
 
       {/* Header centrado */}
       <div className="text-center mb-8">

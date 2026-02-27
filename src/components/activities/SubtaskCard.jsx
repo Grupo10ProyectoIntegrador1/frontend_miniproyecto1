@@ -11,7 +11,8 @@ const SubtaskCard = ({ subtask, onEdit, onDelete, deleting }) => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return null
-    const date = new Date(dateStr)
+    const [year, month, day] = dateStr.split('-')
+    const date = new Date(year, month - 1, day) // ← sin UTC, usa hora local
     return date.toLocaleDateString('es-CO', {
       day: '2-digit',
       month: 'short',
