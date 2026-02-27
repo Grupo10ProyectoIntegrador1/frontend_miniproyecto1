@@ -393,6 +393,7 @@ function ActivityDetailPage() {
               onSubmit={handleAddSubtask}
               onCancel={() => setShowForm(false)}
               loading={subtaskLoading}
+              activityDueDate={activity.due_date} // ← agregar
             />
           </div>
         )}
@@ -410,6 +411,7 @@ function ActivityDetailPage() {
                   onSubmit={handleEditSubtask}
                   onCancel={() => setEditingSubtask(null)}
                   loading={subtaskLoading}
+                  activityDueDate={activity.due_date} // ← agregar
                 />
               ) : (
                 <SubtaskCard
