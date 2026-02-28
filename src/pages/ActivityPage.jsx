@@ -48,9 +48,7 @@ const ActivityPage = () => {
                 <LayoutList size={28} strokeWidth={2.5} />
             </div>
             <div>
-                <h1 className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">
-                    Actividades
-                </h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Actividades</h1>
                 <p className="text-zinc-500 text-sm font-medium">
                     Gestiona y planifica tus compromisos académicos
                 </p>
