@@ -2,8 +2,9 @@ import { Trash2, Pencil, Clock, Calendar } from 'lucide-react'
 
 const STATUS_MAP = {
   pending: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
-  in_progress: { label: 'En progreso', color: 'bg-blue-100 text-blue-700' },
-  completed: { label: 'Completada', color: 'bg-green-100 text-green-700' },
+  done: { label: 'Completada', color: 'bg-green-100 text-green-700' },
+  postponed: { label: 'Postergada', color: 'bg-gray-100 text-gray-700' },
+  overdue: { label: 'Vencida', color: 'bg-red-100 text-red-700' },
 }
 
 const SubtaskCard = ({ subtask, onEdit, onDelete, deleting }) => {
