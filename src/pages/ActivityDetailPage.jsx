@@ -59,19 +59,13 @@ function ActivityDetailPage() {
   useEffect(() => {
     if (activity) {
       const savedDate = activity.due_date || ''
-      // Si la fecha guardada es anterior a hoy, no la ponemos en el formulario
       setForm({
         title: activity.title || '',
         type: activity.type || '',
         course: activity.course || '',
-        due_date: savedDate >= todayStr ? savedDate : '',
+        due_date: savedDate,
         weight: activity.weight ?? '',
       })
-
-      // Si la fecha era pasada, avisamos al usuario
-      if (savedDate && savedDate < todayStr) {
-        setFieldErrors({ due_date: 'La fecha anterior ya venció. Por favor selecciona una nueva fecha.' })
-      }
     }
   }, [activity])
 
