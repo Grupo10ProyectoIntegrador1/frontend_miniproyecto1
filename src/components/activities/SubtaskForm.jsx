@@ -52,7 +52,10 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
     }
     if (!form.target_date) {
       errors.target_date = 'La fecha objetivo es obligatoria.'
-    } else if (form.target_date < todayStr) {
+    } else if (
+      (!initialData || form.target_date !== initialData.target_date) &&
+      form.target_date < todayStr
+    ) {
       errors.target_date = 'La fecha objetivo debe ser mayor o igual a hoy.'
     } else if (activityDueDate && form.target_date > activityDueDate) {
       errors.target_date = `La fecha objetivo no puede ser mayor a la fecha límite de la actividad (${activityDueDate}).`
