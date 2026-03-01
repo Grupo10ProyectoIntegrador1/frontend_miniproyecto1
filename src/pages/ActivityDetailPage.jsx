@@ -23,11 +23,9 @@ const ACTIVITY_TYPES_OPTIONS = [
   { value: 'homework', label: 'Tarea' },
   { value: 'presentation', label: 'Presentación' },
 ]
+import { getLocalTodayStr } from '../utils/dateUtils'
 
-const today = new Date()
-today.setHours(0, 0, 0, 0)
-const todayStr = today.toISOString().split('T')[0]
-
+const todayStr = getLocalTodayStr()
 function ActivityDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()

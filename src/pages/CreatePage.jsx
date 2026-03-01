@@ -4,11 +4,9 @@ import { ChevronDown } from 'lucide-react'
 import { createActivity } from '../services/activityService'
 import Modal from '../components/Modal' // ← agregar import
 
+import { getLocalTodayStr } from '../utils/dateUtils'
 
-const today = new Date()
-today.setHours(0, 0, 0, 0)
-const todayStr = today.toISOString().split('T')[0]
-
+const todayStr = getLocalTodayStr()
 const ACTIVITY_TYPES = [
   { value: 'exam', label: 'Examen' },
   { value: 'quiz', label: 'Quiz' },

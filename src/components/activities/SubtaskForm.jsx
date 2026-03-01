@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+import { getLocalTodayStr } from '../../utils/dateUtils'
 
-const today = new Date()
-today.setHours(0, 0, 0, 0)
-const todayStr = today.toISOString().split('T')[0]  // ← esto faltaba
-
+const todayStr = getLocalTodayStr()
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
   { value: 'done', label: 'Completada' },
