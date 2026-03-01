@@ -81,13 +81,32 @@ function ActivityDetailPage() {
   const handleSave = async (e) => {
     e.preventDefault()
 
-    // Validación de fecha
     const errors = {}
+
+    if (!form.title.trim()) {
+      errors.title = 'El título es obligatorio.'
+    }
+
+    if (!form.type) {
+      errors.type = 'Debes seleccionar un tipo de actividad.'
+    }
+
     if (!form.due_date) {
       errors.due_date = 'La fecha límite es obligatoria.'
-    } else if (form.due_date < todayStr) {
+    } else if (
+      form.due_date !== activity.due_date &&
+      form.due_date < todayStr
+    ) {
       errors.due_date = 'La fecha límite debe ser mayor o igual a hoy.'
     }
+
+    if (form.weight !== '') {
+      const w = parseFloat(form.weight)
+      if (isNaN(w) || w < 0 || w > 100) {
+        errors.weight = 'El peso debe ser un número entre 0 y 100.'
+      }
+    }
+
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       return
@@ -265,9 +284,12 @@ function ActivityDetailPage() {
                   name="title"
                   value={form.title}
                   onChange={handleChange}
-                  required
-                  className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+                  className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                    ${fieldErrors.title ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
                 />
+                {fieldErrors.title && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.title}</p>
+                )}
               </div>
 
               {/* Tipo y Curso */}
@@ -278,14 +300,17 @@ function ActivityDetailPage() {
                     name="type"
                     value={form.type}
                     onChange={handleChange}
-                    required
-                    className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+                    className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                      ${fieldErrors.type ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
                   >
                     <option value="">Selecciona un tipo</option>
                     {ACTIVITY_TYPES_OPTIONS.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
                   </select>
+                  {fieldErrors.type && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.type}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1 flex-1">
@@ -327,8 +352,12 @@ function ActivityDetailPage() {
                     value={form.weight}
                     onChange={handleChange}
                     placeholder="Ej: 30"
-                    className="bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border border-gray-200 focus:border-blue-400 transition-colors"
+                    className={`bg-gray-50 text-gray-900 rounded-lg px-4 py-2 text-sm outline-none border transition-colors
+                      ${fieldErrors.weight ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
                   />
+                  {fieldErrors.weight && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.weight}</p>
+                  )}
                 </div>
               </div>
 
