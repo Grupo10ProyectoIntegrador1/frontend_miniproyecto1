@@ -19,22 +19,24 @@ function Sidebar() {
 
             {/* Links de navegación */}
             <nav className="flex flex-col gap-1 flex-1">
-                {navItems.map(({ to, label, icon: Icon }) => (
-                    <NavLink
-                        key={to}
-                        to={to}
-                        className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                                isActive
-                                ? 'bg-blue-600 text-white font-medium'
-                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                            }`
-                        }
-                    >
-                        <Icon size={18} />
-                        {label}
-                    </NavLink>
-                ))}
+                {navItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${isActive
+                                    ? 'bg-blue-600 text-white font-medium'
+                                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                }`
+                            }
+                        >
+                            <Icon size={18} />
+                            {item.label}
+                        </NavLink>
+                    )
+                })}
             </nav>
 
             {/* Login al fondo */}

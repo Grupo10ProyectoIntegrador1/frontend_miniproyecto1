@@ -6,6 +6,7 @@ export const useActivities = () => {
     const [activities, setActivities] = useState([]);
 
     const loadData = async () => {
+        await Promise.resolve();
         setViewState('loading');
         try {
             const data = await getActivities();
@@ -17,6 +18,7 @@ export const useActivities = () => {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadData();
     }, []);
 

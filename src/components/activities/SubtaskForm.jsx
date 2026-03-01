@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X } from 'lucide-react'
+import { getLocalTodayStr } from '../../utils/dateUtils'
 
-const today = new Date()
-today.setHours(0, 0, 0, 0)
-const todayStr = today.toISOString().split('T')[0]  // ← esto faltaba
-
+const todayStr = getLocalTodayStr()
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
   { value: 'done', label: 'Completada' },
@@ -21,23 +19,14 @@ const EMPTY_FORM = {
 }
 
 const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate }) => {
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState(initialData ? {
+    title: initialData.title || '',
+    description: initialData.description || '',
+    target_date: initialData.target_date || '',
+    estimated_hours: initialData.estimated_hours || '',
+    status: initialData.status || 'pending',
+  } : EMPTY_FORM)
   const [fieldErrors, setFieldErrors] = useState({})
-
-  // Si viene initialData (editar) llena el formulario
-  useEffect(() => {
-    if (initialData) {
-      setForm({
-        title: initialData.title || '',
-        description: initialData.description || '',
-        target_date: initialData.target_date || '',
-        estimated_hours: initialData.estimated_hours || '',
-        status: initialData.status || 'pending',
-      })
-    } else {
-      setForm(EMPTY_FORM)
-    }
-  }, [initialData])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -54,7 +43,10 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
     }
     if (!form.target_date) {
       errors.target_date = 'La fecha objetivo es obligatoria.'
-    } else if (form.target_date < todayStr) {
+    } else if (
+      (!initialData || form.target_date !== initialData.target_date) &&
+      form.target_date < todayStr
+    ) {
       errors.target_date = 'La fecha objetivo debe ser mayor o igual a hoy.'
     } else if (activityDueDate && form.target_date > activityDueDate) {
       errors.target_date = `La fecha objetivo no puede ser mayor a la fecha límite de la actividad (${activityDueDate}).`
