@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X } from 'lucide-react'
 import { getLocalTodayStr } from '../../utils/dateUtils'
 
@@ -19,23 +19,14 @@ const EMPTY_FORM = {
 }
 
 const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate }) => {
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState(initialData ? {
+    title: initialData.title || '',
+    description: initialData.description || '',
+    target_date: initialData.target_date || '',
+    estimated_hours: initialData.estimated_hours || '',
+    status: initialData.status || 'pending',
+  } : EMPTY_FORM)
   const [fieldErrors, setFieldErrors] = useState({})
-
-  // Si viene initialData (editar) llena el formulario
-  useEffect(() => {
-    if (initialData) {
-      setForm({
-        title: initialData.title || '',
-        description: initialData.description || '',
-        target_date: initialData.target_date || '',
-        estimated_hours: initialData.estimated_hours || '',
-        status: initialData.status || 'pending',
-      })
-    } else {
-      setForm(EMPTY_FORM)
-    }
-  }, [initialData])
 
   const handleChange = (e) => {
     const { name, value } = e.target
