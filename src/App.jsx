@@ -6,12 +6,13 @@ import ActivityPage from './pages/ActivityPage'
 import ProgressPage from './pages/ProgressPage'
 import ActivityDetailPage from './pages/ActivityDetailPage'
 
+import LoginPage from './pages/LoginPage'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<div>Login - Próximamente</div>} />
+        <Route path="/login" element={<LoginPage />} />
         {/*Como todas estan rutas comparten el Sidebar las agrupamos aqui*/}
         <Route element={<MainLayout />}>
           {/*Redirige la raiz a /hoy */}
