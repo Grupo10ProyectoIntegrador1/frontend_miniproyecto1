@@ -1,10 +1,34 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import koalaLogo from '../assets/bb51bc4eb2882c49a664ff7c04a240151df066fc.png';
+import { useAuth } from '../context/useAuth';
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+
+        const result = await login(username, password);
+
+        if (result.success) {
+            navigate('/hoy');
+        } else {
+            setError(result.error || 'Credenciales inválidas');
+        }
+
+        setIsLoading(false);
+    };
 
     return (
         <div className="min-h-screen flex bg-gray-50">
@@ -15,7 +39,13 @@ export default function LoginPage() {
                         Iniciar Sesión
                     </h1>
 
-                    <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl text-center text-lg">
+                            {error}
+                        </div>
+                    )}
+
+                    <form className="space-y-10" onSubmit={handleSubmit}>
                         {/* Username Input */}
                         <div className="space-y-4">
                             <label className="block text-2xl font-semibold text-gray-800">
@@ -23,8 +53,11 @@ export default function LoginPage() {
                             </label>
                             <input
                                 type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
                                 placeholder="Ingresa tu nombre de usuario"
                                 className="w-full px-6 py-5 text-xl rounded-2xl bg-gray-100 border-transparent focus:border-blue-500 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400"
+                                required
                             />
                         </div>
 
@@ -36,8 +69,11 @@ export default function LoginPage() {
                             <div className="relative">
                                 <input
                                     type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Ingresa tu contraseña"
                                     className="w-full px-6 py-5 text-xl rounded-2xl bg-gray-100 border-transparent focus:border-blue-500 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 pr-16"
+                                    required
                                 />
                                 <button
                                     type="button"
@@ -71,9 +107,11 @@ export default function LoginPage() {
                         {/* Login Button */}
                         <button
                             type="submit"
-                            className="w-full bg-[#3b82f6] hover:bg-blue-600 text-white text-2xl font-medium py-6 rounded-2xl transition-colors mt-12 shadow-sm"
+                            disabled={isLoading}
+                            className={`w-full text-white text-2xl font-medium py-6 rounded-2xl transition-colors mt-12 shadow-sm ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3b82f6] hover:bg-blue-600'
+                                }`}
                         >
-                            Iniciar Sesión
+                            {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                         </button>
 
                         {/* Sign Up Link */}

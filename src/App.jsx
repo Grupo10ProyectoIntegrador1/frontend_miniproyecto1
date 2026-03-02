@@ -8,25 +8,36 @@ import ActivityDetailPage from './pages/ActivityDetailPage'
 
 import LoginPage from './pages/LoginPage'
 
+import { AuthProvider } from './context/AuthContext'
+import { ProtectedRoute } from './components/routing/ProtectedRoute'
+
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        {/*Como todas estan rutas comparten el Sidebar las agrupamos aqui*/}
-        <Route element={<MainLayout />}>
-          {/*Redirige la raiz a /hoy */}
-          <Route path="/" element={<Navigate to="/hoy" replace />} />
-          <Route path="/hoy" element={<div>Hoy - Próximamente</div>} />
-          <Route path="/crear" element={<CreatePage />} />
-          <Route path="/actividad/:id" element={< ActivityDetailPage />} />
-          <Route path="/actividades" element={<ActivityPage />} />
-          <Route path="/progreso" element={<ProgressPage />} />
-        </Route>
-        {/*Por si ingresan una ruta mal puesta*/}
-        <Route path="*" element={<Navigate to="/hoy" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          {/* Todas  estas rutas comparten el Sidebar y están protegidas */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }
+          >
+            {/*Redirige la raiz a /hoy */}
+            <Route path="/" element={<Navigate to="/hoy" replace />} />
+            <Route path="/hoy" element={<div>Hoy - Próximamente</div>} />
+            <Route path="/crear" element={<CreatePage />} />
+            <Route path="/actividad/:id" element={< ActivityDetailPage />} />
+            <Route path="/actividades" element={<ActivityPage />} />
+            <Route path="/progreso" element={<ProgressPage />} />
+          </Route>
+          {/*Por si ingresan una ruta mal puesta*/}
+          <Route path="*" element={<Navigate to="/hoy" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
