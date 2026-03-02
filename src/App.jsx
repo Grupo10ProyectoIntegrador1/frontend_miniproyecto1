@@ -7,6 +7,7 @@ import ProgressPage from './pages/ProgressPage'
 import ActivityDetailPage from './pages/ActivityDetailPage'
 
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 
 import { AuthProvider } from './context/AuthContext'
 import { ProtectedRoute } from './components/routing/ProtectedRoute'
@@ -17,6 +18,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/registro" element={<RegisterPage />} />
           {/* Todas  estas rutas comparten el Sidebar y están protegidas */}
           <Route
             element={
