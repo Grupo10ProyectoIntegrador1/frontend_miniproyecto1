@@ -8,6 +8,7 @@ import ActivityDetailPage from './pages/ActivityDetailPage'
 
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import HoyPage from './pages/HoyPage'
 
 import { AuthProvider } from './context/AuthContext'
 import { ProtectedRoute } from './components/routing/ProtectedRoute'
@@ -29,7 +30,7 @@ function App() {
           >
             {/*Redirige la raiz a /hoy */}
             <Route path="/" element={<Navigate to="/hoy" replace />} />
-            <Route path="/hoy" element={<div>Hoy - Próximamente</div>} />
+            <Route path="/hoy" element={<HoyPage />} />
             <Route path="/crear" element={<CreatePage />} />
             <Route path="/actividad/:id" element={< ActivityDetailPage />} />
             <Route path="/actividades" element={<ActivityPage />} />
