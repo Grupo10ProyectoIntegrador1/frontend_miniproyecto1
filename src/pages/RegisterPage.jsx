@@ -70,7 +70,7 @@ export default function RegisterPage() {
         const result = await register({ firstName, lastName, email, password });
 
         if (result.success) {
-            navigate('/login');
+            navigate('/');
         } else {
             setGlobalError(result.error || 'Ocurrió un error al intentar registrarte');
         }
