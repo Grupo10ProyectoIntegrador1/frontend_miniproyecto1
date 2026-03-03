@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
-import { CalendarDays, PlusCircle, BarChart2, LogIn, LayoutList } from "lucide-react";
+import { CalendarDays, PlusCircle, BarChart2, LogIn, LogOut, LayoutList } from "lucide-react";
+import { useAuth } from "../../context/useAuth";
 
 const navItems = [
     { to: '/hoy', label: 'Hoy', icon: CalendarDays },
@@ -9,6 +10,8 @@ const navItems = [
 ]
 
 function Sidebar() {
+    const { isAuthenticated, logout } = useAuth();
+
     return (
         <aside className="h-screen w-64 bg-zinc-900 text-white flex flex-col px-4 py-6 fixed left-0 top-0">
 
@@ -39,14 +42,24 @@ function Sidebar() {
                 })}
             </nav>
 
-            {/* Login al fondo */}
-            <NavLink
-                to="/login"
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-            >
-                <LogIn size={18} />
-                Iniciar sesión
-            </NavLink>
+            {/* Acciones de cuenta al fondo */}
+            {isAuthenticated ? (
+                <button
+                    onClick={logout}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors w-full text-left"
+                >
+                    <LogOut size={18} />
+                    Cerrar sesión
+                </button>
+            ) : (
+                <NavLink
+                    to="/login"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+                >
+                    <LogIn size={18} />
+                    Iniciar sesión
+                </NavLink>
+            )}
 
         </aside>
     )

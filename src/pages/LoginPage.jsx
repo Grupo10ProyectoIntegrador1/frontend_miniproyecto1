@@ -6,9 +6,9 @@ import { useAuth } from '../context/useAuth';
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [fieldErrors, setFieldErrors] = useState({ username: '', password: '' });
+    const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
     const [globalError, setGlobalError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -18,16 +18,17 @@ export default function LoginPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Reset errors
-        setFieldErrors({ username: '', password: '' });
+        setFieldErrors({ email: '', password: '' });
         setGlobalError('');
 
-        // Validate fields
         let hasErrors = false;
-        const newFieldErrors = { username: '', password: '' };
+        const newFieldErrors = { email: '', password: '' };
 
-        if (!username.trim()) {
-            newFieldErrors.username = 'Debes de ingresar el nombre de usuario';
+        if (!email.trim()) {
+            newFieldErrors.email = 'Debes de ingresar tu correo electrónico';
+            hasErrors = true;
+        } else if (!/\S+@\S+\.\S+/.test(email)) {
+            newFieldErrors.email = 'Debes de ingresar un correo electrónico válido';
             hasErrors = true;
         }
 
@@ -43,7 +44,7 @@ export default function LoginPage() {
 
         setIsLoading(true);
 
-        const result = await login(username, password);
+        const result = await login(email, password);
 
         if (result.success) {
             navigate('/hoy');
@@ -70,21 +71,21 @@ export default function LoginPage() {
                     )}
 
                     <form className="space-y-10" onSubmit={handleSubmit}>
-                        {/* Username Input */}
+                        {/* Email Input */}
                         <div className="space-y-4">
                             <label className="block text-2xl font-semibold text-gray-800">
-                                Nombre de usuario
+                                Correo electrónico
                             </label>
                             <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Ingresa tu nombre de usuario"
-                                className={`w-full px-6 py-5 text-xl rounded-2xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.username ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Ingresa tu correo electrónico"
+                                className={`w-full px-6 py-5 text-xl rounded-2xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
                                     }`}
                             />
-                            {fieldErrors.username && (
-                                <p className="text-red-500 text-lg mt-2">{fieldErrors.username}</p>
+                            {fieldErrors.email && (
+                                <p className="text-red-500 text-lg mt-2">{fieldErrors.email}</p>
                             )}
                         </div>
 

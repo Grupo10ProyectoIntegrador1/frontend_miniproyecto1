@@ -1,5 +1,5 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
+import { supabase } from './supabaseClient';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
@@ -9,30 +9,38 @@ const api = axios.create({
     },
 });
 
-// Request interceptor to add the JWT token
 api.interceptors.request.use(
-    (config) => {
-        const token = Cookies.get('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+    async (config) => {
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+
+            if (error) {
+                console.error("[API Interceptor] Error fetching session:", error);
+            }
+
+            if (session && session.access_token) {
+                config.headers.Authorization = `Bearer ${session.access_token}`;
+            }
+            return config;
+        } catch (err) {
+            console.error("[API Interceptor] Catch block hit:", err);
+            return Promise.reject(err);
         }
-        return config;
     },
     (error) => {
+        console.error("[API Interceptor] Request error:", error);
         return Promise.reject(error);
     }
 );
 
-// Response interceptor to handle 401 Unauthorized globally
+
 api.interceptors.response.use(
     (response) => {
         return response;
     },
-    (error) => {
+    async (error) => {
         if (error.response && error.response.status === 401) {
-            // Optional: You can clear the cookie here or let the AuthContext handle it
-            Cookies.remove('token');
-            // Redirect to login using window.location since we are outside React Router context
+            await supabase.auth.signOut();
             window.location.href = '/login';
         }
         return Promise.reject(error);

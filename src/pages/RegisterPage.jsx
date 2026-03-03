@@ -2,35 +2,30 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import koalaLogo from '../assets/bb51bc4eb2882c49a664ff7c04a240151df066fc.png';
-import { useAuth } from '../context/useAuth'; // Using context normally, fallback to empty if register not implemented
+import { useAuth } from '../context/useAuth';
 
 export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
 
-    // Form fields
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [acceptTerms, setAcceptTerms] = useState(false);
 
-    // Validation & State
     const [fieldErrors, setFieldErrors] = useState({});
     const [globalError, setGlobalError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // const { register } = useAuth(); // If they have a register method in AuthContext
+    const { register } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Reset errors
         setFieldErrors({});
         setGlobalError('');
 
-        // Validate fields
         let hasErrors = false;
         const newFieldErrors = {};
 
@@ -41,11 +36,6 @@ export default function RegisterPage() {
 
         if (!lastName.trim()) {
             newFieldErrors.lastName = 'El apellido es obligatorio.';
-            hasErrors = true;
-        }
-
-        if (!username.trim()) {
-            newFieldErrors.username = 'El nombre de usuario es obligatorio.';
             hasErrors = true;
         }
 
@@ -77,19 +67,15 @@ export default function RegisterPage() {
 
         setIsLoading(true);
 
-        try {
-            // Mocking register API call for now, assuming not yet in AuthContext or simply just redirect to login
-            // const result = await register({ firstName, lastName, username, email, password });
+        const result = await register({ firstName, lastName, email, password });
 
-            // Just simulate a small delay to show loading state as requested visually
-            await new Promise((resolve) => setTimeout(resolve, 800));
-            // Redirect to login after successful registration
+        if (result.success) {
             navigate('/login');
-        } catch (error) {
-            setGlobalError('Ocurrió un error al intentar registrarte');
-        } finally {
-            setIsLoading(false);
+        } else {
+            setGlobalError(result.error || 'Ocurrió un error al intentar registrarte');
         }
+
+        setIsLoading(false);
     };
 
     return (
@@ -142,24 +128,6 @@ export default function RegisterPage() {
                             />
                             {fieldErrors.lastName && (
                                 <p className="text-red-500 text-sm mt-1">{fieldErrors.lastName}</p>
-                            )}
-                        </div>
-
-                        {/* Username Input */}
-                        <div className="space-y-2">
-                            <label className="block text-lg font-semibold text-gray-800">
-                                Nombre de usuario
-                            </label>
-                            <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Ej: pepito123"
-                                className={`w-full px-4 py-3 text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.username ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
-                                    }`}
-                            />
-                            {fieldErrors.username && (
-                                <p className="text-red-500 text-sm mt-1">{fieldErrors.username}</p>
                             )}
                         </div>
 
