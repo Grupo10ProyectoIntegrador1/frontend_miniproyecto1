@@ -81,6 +81,7 @@ export const AuthProvider = ({ children }) => {
     const register = async (userData) => {
         try {
             await authService.register(userData);
+            await fetchProfile(); // Explicitly fetch profile so state is updated before navigating
             return { success: true };
         } catch (error) {
             console.error("Error de registro:", error);
