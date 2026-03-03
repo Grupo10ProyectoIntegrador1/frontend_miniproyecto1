@@ -87,7 +87,6 @@ function CreatePage() {
         course: form.course.trim() || null,
         due_date: form.due_date,
         weight: form.weight !== '' ? parseFloat(form.weight) : null,
-        user_id: 1,
       }
       await createActivity(payload)
       setShowSuccessModal(true) // ← mostrar modal en lugar de navegar directo
