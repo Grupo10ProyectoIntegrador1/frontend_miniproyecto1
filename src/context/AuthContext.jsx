@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             await authService.login(email, password);
+            await fetchProfile(); // Explicitly fetch profile so state is updated before navigating
             return { success: true };
         } catch (error) {
             console.error("Error de login:", error);
