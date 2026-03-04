@@ -35,7 +35,7 @@ export default function RegisterPage() {
         } else if (firstName.trim().length > 50) {
             newFieldErrors.firstName = 'El nombre es demasiado largo (máx 50 caracteres).';
             hasErrors = true;
-        } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s\-]+$/.test(firstName)) {
+        } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s-]+$/.test(firstName)) {
             newFieldErrors.firstName = 'El nombre solo puede contener letras.';
             hasErrors = true;
         }
@@ -46,7 +46,7 @@ export default function RegisterPage() {
         } else if (lastName.trim().length > 50) {
             newFieldErrors.lastName = 'El apellido es demasiado largo (máx 50 caracteres).';
             hasErrors = true;
-        } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s\-]+$/.test(lastName)) {
+        } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s-]+$/.test(lastName)) {
             newFieldErrors.lastName = 'El apellido solo puede contener letras.';
             hasErrors = true;
         }

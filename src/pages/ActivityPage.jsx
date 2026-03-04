@@ -33,7 +33,7 @@ const ActivityPage = () => {
         try {
             await deleteActivity(id)
             reload() // Recarga la lista después de eliminar
-        } catch (err) {
+        } catch {
             alert('Ocurrió un error al eliminar la actividad. Intenta de nuevo.')
         } finally {
             setDeletingId(null)

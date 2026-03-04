@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
         initAuth();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(
-            (event, session) => {
+            (event) => {
                 if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                     if (!user) {
                         setTimeout(() => fetchProfile(), 0);
@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }) => {
         return () => {
             authListener.subscription.unsubscribe();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchProfile = async () => {

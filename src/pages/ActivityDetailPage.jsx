@@ -127,7 +127,7 @@ function ActivityDetailPage() {
         message: 'La actividad ha sido editada de manera exitosa.',
         onConfirm: null,
       })
-    } catch (err) {
+    } catch {
       setModalConfig({
         isOpen: true,
         type: 'error',
@@ -158,7 +158,7 @@ function ActivityDetailPage() {
             message: 'La actividad ha sido eliminada de manera exitosa junto con sus tareas.',
             onConfirm: () => navigate('/hoy'),
           })
-        } catch (err) {
+        } catch {
           setModalConfig({
             isOpen: true,
             type: 'error',
