@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Plus, X, ListTodo } from 'lucide-react'
 import { createActivity } from '../services/activityService'
 import Modal from '../components/Modal' // ← agregar import
+import SubtaskForm from '../components/activities/SubtaskForm'
 
 import { getLocalTodayStr } from '../utils/dateUtils'
 
@@ -24,7 +25,7 @@ const INITIAL_FORM = {
 }
 
 // Validaciones del frontend — retorna un objeto con los errores encontrados
-const validateForm = (form) => {
+const validateForm = (form, subtasks = []) => {
   const errors = {}
 
   if (!form.title.trim()) {
@@ -39,6 +40,8 @@ const validateForm = (form) => {
     errors.due_date = 'La fecha límite es obligatoria.'
   } else if (form.due_date < todayStr) {
     errors.due_date = 'La fecha límite debe ser mayor o igual a hoy.'
+  } else if (subtasks.some(s => s.target_date > form.due_date)) {
+    errors.due_date = 'La fecha límite no puede ser anterior a las fechas de sus subtareas.'
   }
 
   if (form.weight !== '') {
@@ -59,6 +62,8 @@ function CreatePage() {
   const [serverError, setServerError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false) // ← agregar
+  const [subtasks, setSubtasks] = useState([])
+  const [showSubtaskForm, setShowSubtaskForm] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -73,7 +78,7 @@ function CreatePage() {
     e.preventDefault()
     setServerError(null)
 
-    const errors = validateForm(form)
+    const errors = validateForm(form, subtasks)
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       return // No manda nada al backend si hay errores
@@ -87,6 +92,7 @@ function CreatePage() {
         course: form.course.trim() || null,
         due_date: form.due_date,
         weight: form.weight !== '' ? parseFloat(form.weight) : null,
+        subtasks: subtasks // ← array con las subtareas a crear
       }
       await createActivity(payload)
       setShowSuccessModal(true) // ← mostrar modal en lugar de navegar directo
@@ -102,6 +108,15 @@ function CreatePage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleAddSubtask = (subtaskData) => {
+    setSubtasks((prev) => [...prev, { ...subtaskData, id: Date.now() }])
+    setShowSubtaskForm(false)
+  }
+
+  const handleRemoveSubtask = (idToRemove) => {
+    setSubtasks((prev) => prev.filter(s => s.id !== idToRemove))
   }
 
   return (
@@ -230,6 +245,58 @@ function CreatePage() {
               <p className="text-red-500 text-sm">{serverError}</p>
             </div>
           )}
+
+          {/* Subtareas */}
+          <div className="flex flex-col gap-3 mt-2">
+            <h2 className="text-lg font-bold text-gray-900">Subtareas</h2>
+
+            {/* Lista de subtareas agendadas */}
+            {subtasks.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {subtasks.map((subtask) => (
+                  <div key={subtask.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg group">
+                    <div className="flex items-start gap-3">
+                      <ListTodo size={18} className="text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800 leading-none mb-1">{subtask.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {subtask.target_date ? `Fecha: ${subtask.target_date}` : 'Sin fecha'}
+                          {subtask.estimated_hours && ` • ${subtask.estimated_hours} horas`}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSubtask(subtask.id)}
+                      className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                      aria-label="Remove subtask"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Formulario Inline de Subtarea */}
+            {showSubtaskForm ? (
+              <div className="mt-2">
+                <SubtaskForm
+                  onSubmit={handleAddSubtask}
+                  onCancel={() => setShowSubtaskForm(false)}
+                  activityDueDate={form.due_date}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowSubtaskForm(true)}
+                className="flex items-center gap-2 text-blue-600 font-semibold text-sm hover:text-blue-700 transition-colors w-fit p-1"
+              >
+                <Plus size={16} /> Agregar subtarea
+              </button>
+            )}
+          </div>
 
           {/* Botón */}
           <button
