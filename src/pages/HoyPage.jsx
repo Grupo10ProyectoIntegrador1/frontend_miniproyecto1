@@ -265,9 +265,9 @@ const HoyPage = () => {
                         </p>
                     ) : (
                         <div className="flex flex-col items-center text-zinc-400">
-                            <Coffee size={48} strokeWidth={1.5} className="mb-4 text-zinc-300" />
-                            <p className="font-medium text-zinc-500">
-                                No tienes tareas programadas para hoy ni próximas a vencer. ¡Disfruta tu día!
+                            <Coffee size={64} strokeWidth={1.5} className="mb-4 text-zinc-300" />
+                            <p className="font-medium text-zinc-500 text-lg">
+                                No hay tareas programadas.
                             </p>
                         </div>
                     )}
