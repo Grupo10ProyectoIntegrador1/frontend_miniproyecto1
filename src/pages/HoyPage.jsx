@@ -83,7 +83,7 @@ const HoyPage = () => {
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white w-20"
                 />
             </div>
-            <div className="ml-auto relative group">
+            <div className="ml-auto relative group mb-3">
                 <button className="flex items-center gap-1.5 justify-center text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors">
                     <HelpCircle size={16} />
                     ¿Cómo se ordena?
