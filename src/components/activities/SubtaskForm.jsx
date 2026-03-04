@@ -48,8 +48,10 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
       form.target_date < todayStr
     ) {
       errors.target_date = 'La fecha objetivo debe ser mayor o igual a hoy.'
+    } else if (activityDueDate !== undefined && !activityDueDate) {
+      errors.target_date = 'Selecciona la fecha límite de la actividad primero.'
     } else if (activityDueDate && form.target_date > activityDueDate) {
-      errors.target_date = `La fecha objetivo no puede ser mayor a la fecha límite de la actividad (${activityDueDate}).`
+      errors.target_date = `La fecha objetivo no puede ser mayor a la fecha límite (${activityDueDate}).`
     }
     if (!form.estimated_hours) {
       errors.estimated_hours = 'Las horas estimadas son obligatorias.'
@@ -98,7 +100,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
 
         {/* Título */}
         <div className="flex flex-col gap-1">
@@ -113,7 +115,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
               ${fieldErrors.title ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
           />
           {fieldErrors.title && (
-            <p className="text-red-500 text-xs">{fieldErrors.title}</p>
+            <p className="text-red-500 text-sm mt-1">{fieldErrors.title}</p>
           )}
         </div>
 
@@ -144,7 +146,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
               ${fieldErrors.target_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
           />
           {fieldErrors.target_date && (
-            <p className="text-red-500 text-xs">{fieldErrors.target_date}</p>
+            <p className="text-red-500 text-sm mt-1">{fieldErrors.target_date}</p>
           )}
         </div>
 
@@ -163,7 +165,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
               ${fieldErrors.estimated_hours ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
           />
           {fieldErrors.estimated_hours && (
-            <p className="text-red-500 text-xs">{fieldErrors.estimated_hours}</p>
+            <p className="text-red-500 text-sm mt-1">{fieldErrors.estimated_hours}</p>
           )}
         </div>
 
@@ -187,7 +189,8 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
         {/* Botones */}
         <div className="flex gap-3 mt-1">
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={loading}
             className="bg-blue-600 text-white font-semibold rounded-lg py-2 px-5 text-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
@@ -202,7 +205,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
           </button>
         </div>
 
-      </form>
+      </div>
     </div>
   )
 }

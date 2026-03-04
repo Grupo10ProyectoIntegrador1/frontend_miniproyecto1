@@ -32,10 +32,22 @@ export default function RegisterPage() {
         if (!firstName.trim()) {
             newFieldErrors.firstName = 'El nombre es obligatorio.';
             hasErrors = true;
+        } else if (firstName.trim().length > 50) {
+            newFieldErrors.firstName = 'El nombre es demasiado largo (máx 50 caracteres).';
+            hasErrors = true;
+        } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s-]+$/.test(firstName)) {
+            newFieldErrors.firstName = 'El nombre solo puede contener letras.';
+            hasErrors = true;
         }
 
         if (!lastName.trim()) {
             newFieldErrors.lastName = 'El apellido es obligatorio.';
+            hasErrors = true;
+        } else if (lastName.trim().length > 50) {
+            newFieldErrors.lastName = 'El apellido es demasiado largo (máx 50 caracteres).';
+            hasErrors = true;
+        } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s-]+$/.test(lastName)) {
+            newFieldErrors.lastName = 'El apellido solo puede contener letras.';
             hasErrors = true;
         }
 
@@ -50,8 +62,8 @@ export default function RegisterPage() {
         if (!password) {
             newFieldErrors.password = 'La contraseña es obligatoria.';
             hasErrors = true;
-        } else if (password.length < 6) {
-            newFieldErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+        } else if (password.length < 8) {
+            newFieldErrors.password = 'La contraseña debe tener al menos 8 caracteres';
             hasErrors = true;
         }
 
@@ -81,9 +93,9 @@ export default function RegisterPage() {
     return (
         <div className="min-h-screen flex bg-gray-50">
             {/* Left side - Register Form */}
-            <div className="w-full md:w-[55%] flex items-center justify-center p-8 bg-white overflow-y-auto">
+            <div className="w-full lg:w-[55%] flex items-center justify-center p-4 sm:p-8 bg-white overflow-y-auto">
                 <div className="w-full max-w-2xl my-auto">
-                    <h1 className="text-5xl font-extrabold mb-8 text-black text-center">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-6 md:mb-8 text-black text-center">
                         Crear Cuenta
                     </h1>
 
@@ -97,7 +109,7 @@ export default function RegisterPage() {
 
                         {/* FirstName Input */}
                         <div className="space-y-2">
-                            <label className="block text-lg font-semibold text-gray-800">
+                            <label className="block text-base md:text-lg font-semibold text-gray-800">
                                 Nombre
                             </label>
                             <input
@@ -105,7 +117,7 @@ export default function RegisterPage() {
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
                                 placeholder="Ingresa tu nombre"
-                                className={`w-full px-4 py-3 text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.firstName ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
+                                className={`w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.firstName ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
                                     }`}
                             />
                             {fieldErrors.firstName && (
@@ -115,7 +127,7 @@ export default function RegisterPage() {
 
                         {/* LastName Input */}
                         <div className="space-y-2">
-                            <label className="block text-lg font-semibold text-gray-800">
+                            <label className="block text-base md:text-lg font-semibold text-gray-800">
                                 Apellido
                             </label>
                             <input
@@ -123,7 +135,7 @@ export default function RegisterPage() {
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
                                 placeholder="Ingresa tu apellido"
-                                className={`w-full px-4 py-3 text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.lastName ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
+                                className={`w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.lastName ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
                                     }`}
                             />
                             {fieldErrors.lastName && (
@@ -133,7 +145,7 @@ export default function RegisterPage() {
 
                         {/* Email Input */}
                         <div className="space-y-2">
-                            <label className="block text-lg font-semibold text-gray-800">
+                            <label className="block text-base md:text-lg font-semibold text-gray-800">
                                 Correo electrónico
                             </label>
                             <input
@@ -141,7 +153,7 @@ export default function RegisterPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="Ej: tu@email.com"
-                                className={`w-full px-4 py-3 text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
+                                className={`w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
                                     }`}
                             />
                             {fieldErrors.email && (
@@ -151,7 +163,7 @@ export default function RegisterPage() {
 
                         {/* Password Input */}
                         <div className="space-y-2">
-                            <label className="block text-lg font-semibold text-gray-800">
+                            <label className="block text-base md:text-lg font-semibold text-gray-800">
                                 Contraseña
                             </label>
                             <div className="relative">
@@ -160,7 +172,7 @@ export default function RegisterPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Mínimo 8 caracteres"
-                                    className={`w-full px-4 py-3 text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 pr-12 ${fieldErrors.password ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
+                                    className={`w-full px-3 py-2 md:px-4 md:py-3 text-sm md:text-base rounded-xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 pr-12 ${fieldErrors.password ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
                                         }`}
                                 />
                                 <button
@@ -189,7 +201,7 @@ export default function RegisterPage() {
                                     onChange={(e) => setAcceptTerms(e.target.checked)}
                                     className={`w-5 h-5 rounded border-gray-300 text-blue-500 focus:ring-blue-500 bg-gray-100 ${fieldErrors.acceptTerms ? 'border-red-500' : ''}`}
                                 />
-                                <span className="text-base font-medium text-gray-600">Acepto términos y condiciones</span>
+                                <span className="text-sm md:text-base font-medium text-gray-600">Acepto términos y condiciones</span>
                             </label>
                             {fieldErrors.acceptTerms && (
                                 <p className="text-red-500 text-sm mt-1">{fieldErrors.acceptTerms}</p>
@@ -200,16 +212,16 @@ export default function RegisterPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className={`w-full text-white text-xl font-medium py-4 rounded-xl transition-colors mt-6 shadow-sm ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3b82f6] hover:bg-blue-600'
+                            className={`w-full text-white text-lg md:text-xl font-medium py-3 md:py-4 rounded-xl transition-colors mt-4 md:mt-6 shadow-sm ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3b82f6] hover:bg-blue-600'
                                 }`}
                         >
                             {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
                         </button>
 
                         {/* Login Link */}
-                        <div className="text-center pt-4">
-                            <span className="text-gray-500 text-base">¿Ya tienes una cuenta? </span>
-                            <Link to="/login" className="text-blue-500 text-base font-medium hover:text-blue-600">
+                        <div className="text-center pt-4 flex flex-col sm:flex-row justify-center gap-1 sm:gap-2">
+                            <span className="text-gray-500 text-sm md:text-base">¿Ya tienes una cuenta?</span>
+                            <Link to="/login" className="text-blue-500 text-sm md:text-base font-medium hover:text-blue-600">
                                 Inicia sesión aquí
                             </Link>
                         </div>
@@ -218,7 +230,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Right side - Illustration */}
-            <div className="hidden md:flex w-[45%] bg-[#2d7df6] rounded-bl-[250px] items-center justify-center p-12 relative overflow-hidden">
+            <div className="hidden lg:flex w-[45%] bg-[#2d7df6] rounded-bl-[250px] items-center justify-center p-12 relative overflow-hidden">
                 <div className="flex flex-col items-center justify-center relative z-10 w-full max-w-[900px] text-center">
                     {/* Logo / Illustration */}
                     <div className="mb-0 w-full flex justify-center relative -mt-10">

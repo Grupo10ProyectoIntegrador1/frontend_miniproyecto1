@@ -12,7 +12,7 @@ export const useActivities = () => {
             const data = await getActivities();
             setActivities(data);
             setViewState(data.length > 0 ? 'success' : 'empty');
-        } catch (err) {
+        } catch {
             setViewState('error');
         }
     };

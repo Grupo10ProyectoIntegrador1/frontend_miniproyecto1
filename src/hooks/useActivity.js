@@ -12,7 +12,7 @@ export const useActivity = (id) => {
             const data = await getActivitiesById(id)
             setActivity(data)
             setViewState('success')
-        } catch (err) {
+        } catch {
             setViewState('error')
         }
     }, [id])

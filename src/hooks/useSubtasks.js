@@ -21,7 +21,7 @@ export const useSubtasks = (activity) => {
             const response = await createSubtask(activity.id, subtasksData)
             setSubtasks((prev) => [...prev, response.data])
             return true
-        } catch (err) {
+        } catch {
             setError('Error al crear la subtarea.')
             return false
         } finally {
@@ -35,11 +35,11 @@ export const useSubtasks = (activity) => {
         setError(null)
         try {
             const response = await updateSubtask(id, subtaskData)
-            setSubtasks((prev) => 
+            setSubtasks((prev) =>
                 prev.map((s) => s.id === id ? response.data : s)
             )
             return true
-        } catch (err) {
+        } catch {
             setError('Error al actualizar la subtarea.')
             return false
         } finally {
@@ -55,7 +55,7 @@ export const useSubtasks = (activity) => {
             await deleteSubtask(id)
             setSubtasks((prev) => prev.filter((s) => s.id !== id))
             return true
-        } catch (err) {
+        } catch {
             setError('Error al eliminar la subtarea.')
             return false
         } finally {
