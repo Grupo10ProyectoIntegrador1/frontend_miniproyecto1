@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useActivities } from '../hooks/useActivities';
-import { UserCircle, BookOpen, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, RotateCcw, Loader2 } from 'lucide-react';
+import { UserCircle, BookOpen, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, RotateCcw, Loader2, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getLocalTodayStr } from '../utils/dateUtils';
 
@@ -258,8 +258,19 @@ const HoyPage = () => {
             )}
 
             {vencidas.length === 0 && paraHoy.length === 0 && proximas.length === 0 && (
-                <div className="text-center py-10">
-                    <p className="text-zinc-500 font-medium">No hay tareas que coincidan con los filtros en este rango de fechas.</p>
+                <div className="flex flex-col items-center justify-center py-32 text-center">
+                    {(courseFilter !== 'Todos' || statusFilter !== 'Todos' || daysFilter !== '') ? (
+                        <p className="text-zinc-500 font-medium">
+                            No hay tareas que coincidan con los filtros aplicados en este rango de fechas.
+                        </p>
+                    ) : (
+                        <div className="flex flex-col items-center text-zinc-400">
+                            <Coffee size={48} strokeWidth={1.5} className="mb-4 text-zinc-300" />
+                            <p className="font-medium text-zinc-500">
+                                No tienes tareas programadas para hoy ni próximas a vencer. ¡Disfruta tu día!
+                            </p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
