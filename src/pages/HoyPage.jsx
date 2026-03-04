@@ -66,8 +66,10 @@ const HoyPage = () => {
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
                 >
                     <option value="Todos">Todos</option>
-                    <option value="Pendientes">Pendientes</option>
-                    <option value="Completados">Completados</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Completada">Completada</option>
+                    <option value="Postergada">Postergada</option>
+                    <option value="Vencida">Vencida</option>
                 </select>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -126,10 +128,12 @@ const HoyPage = () => {
 
         const isCompleted = s.status === 'completed' || s.status === 'done';
         // Never show completed tasks in 'Hoy'
-        if (isCompleted) return false;
+        if (isCompleted && statusFilter !== 'Completada') return false; // Only filter out if not explicitly looking for completed
 
-        if (statusFilter === 'Pendientes' && isCompleted) return false;
-        if (statusFilter === 'Completados' && !isCompleted) return false;
+        if (statusFilter === 'Pendiente' && s.status !== 'pending') return false;
+        if (statusFilter === 'Completada' && s.status !== 'done') return false; // This technically won't render anything here due to line 125 but it keeps logic consistent.
+        if (statusFilter === 'Postergada' && s.status !== 'postponed') return false;
+        if (statusFilter === 'Vencida' && s.status !== 'overdue') return false;
 
         return true;
     });
