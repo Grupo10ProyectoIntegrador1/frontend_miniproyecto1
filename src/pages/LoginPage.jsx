@@ -85,7 +85,7 @@ export default function LoginPage() {
                                     }`}
                             />
                             {fieldErrors.email && (
-                                <p className="text-red-500 text-lg mt-2">{fieldErrors.email}</p>
+                                <p className="text-red-500 text-sm mt-1">{fieldErrors.email}</p>
                             )}
                         </div>
 
@@ -116,7 +116,7 @@ export default function LoginPage() {
                                 </button>
                             </div>
                             {fieldErrors.password && (
-                                <p className="text-red-500 text-lg mt-2">{fieldErrors.password}</p>
+                                <p className="text-red-500 text-sm mt-1">{fieldErrors.password}</p>
                             )}
                         </div>
 

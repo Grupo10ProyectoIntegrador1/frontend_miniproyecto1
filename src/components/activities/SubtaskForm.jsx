@@ -113,7 +113,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
               ${fieldErrors.title ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
           />
           {fieldErrors.title && (
-            <p className="text-red-500 text-xs">{fieldErrors.title}</p>
+            <p className="text-red-500 text-sm mt-1">{fieldErrors.title}</p>
           )}
         </div>
 
@@ -144,7 +144,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
               ${fieldErrors.target_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
           />
           {fieldErrors.target_date && (
-            <p className="text-red-500 text-xs">{fieldErrors.target_date}</p>
+            <p className="text-red-500 text-sm mt-1">{fieldErrors.target_date}</p>
           )}
         </div>
 
@@ -163,7 +163,7 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
               ${fieldErrors.estimated_hours ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
           />
           {fieldErrors.estimated_hours && (
-            <p className="text-red-500 text-xs">{fieldErrors.estimated_hours}</p>
+            <p className="text-red-500 text-sm mt-1">{fieldErrors.estimated_hours}</p>
           )}
         </div>
 

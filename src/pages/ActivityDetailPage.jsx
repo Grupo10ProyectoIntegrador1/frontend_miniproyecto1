@@ -288,7 +288,7 @@ function ActivityDetailPage() {
                     ${fieldErrors.title ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
                 />
                 {fieldErrors.title && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.title}</p>
+                  <p className="text-red-500 text-sm mt-1">{fieldErrors.title}</p>
                 )}
               </div>
 
@@ -309,7 +309,7 @@ function ActivityDetailPage() {
                     ))}
                   </select>
                   {fieldErrors.type && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.type}</p>
+                    <p className="text-red-500 text-sm mt-1">{fieldErrors.type}</p>
                   )}
                 </div>
 
@@ -338,7 +338,7 @@ function ActivityDetailPage() {
                       ${fieldErrors.due_date ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
                   />
                   {fieldErrors.due_date && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.due_date}</p>
+                    <p className="text-red-500 text-sm mt-1">{fieldErrors.due_date}</p>
                   )}
                 </div>
 
@@ -356,7 +356,7 @@ function ActivityDetailPage() {
                       ${fieldErrors.weight ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`}
                   />
                   {fieldErrors.weight && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.weight}</p>
+                    <p className="text-red-500 text-sm mt-1">{fieldErrors.weight}</p>
                   )}
                 </div>
               </div>
