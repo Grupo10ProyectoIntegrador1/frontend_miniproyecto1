@@ -32,10 +32,22 @@ export default function RegisterPage() {
         if (!firstName.trim()) {
             newFieldErrors.firstName = 'El nombre es obligatorio.';
             hasErrors = true;
+        } else if (firstName.trim().length > 50) {
+            newFieldErrors.firstName = 'El nombre es demasiado largo (máx 50 caracteres).';
+            hasErrors = true;
+        } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s\-]+$/.test(firstName)) {
+            newFieldErrors.firstName = 'El nombre solo puede contener letras.';
+            hasErrors = true;
         }
 
         if (!lastName.trim()) {
             newFieldErrors.lastName = 'El apellido es obligatorio.';
+            hasErrors = true;
+        } else if (lastName.trim().length > 50) {
+            newFieldErrors.lastName = 'El apellido es demasiado largo (máx 50 caracteres).';
+            hasErrors = true;
+        } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s\-]+$/.test(lastName)) {
+            newFieldErrors.lastName = 'El apellido solo puede contener letras.';
             hasErrors = true;
         }
 
@@ -50,8 +62,8 @@ export default function RegisterPage() {
         if (!password) {
             newFieldErrors.password = 'La contraseña es obligatoria.';
             hasErrors = true;
-        } else if (password.length < 6) {
-            newFieldErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+        } else if (password.length < 8) {
+            newFieldErrors.password = 'La contraseña debe tener al menos 8 caracteres';
             hasErrors = true;
         }
 
