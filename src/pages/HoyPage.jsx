@@ -21,6 +21,7 @@ const formatDateShort = (dateStr) => {
 
 const HoyPage = () => {
     const { activities = [], viewState, reload } = useActivities();
+
     const [daysFilter, setDaysFilter] = useState('');
     const [courseFilter, setCourseFilter] = useState('Todos');
     const [statusFilter, setStatusFilter] = useState('Todos');
@@ -80,17 +81,36 @@ const HoyPage = () => {
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white w-20"
                 />
             </div>
-            <div className="ml-auto">
+            <div className="ml-auto relative group">
                 <button className="flex items-center gap-1.5 justify-center text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors">
                     <HelpCircle size={16} />
                     ¿Cómo se ordena?
                 </button>
+                <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
+                    <span className="font-bold text-white block mb-1">¿Cómo se ordena?</span>
+                    Las actividades se agrupan por prioridad temporal (Vencidas, Hoy, Próximas). Dentro de cada grupo, se ordenan cronológicamente por la fecha límite más cercana para facilitarte la planificación diaria.
+                </div>
             </div>
         </div>
     );
 
     // Logic to filter and group activities
     const todayStr = getLocalTodayStr();
+    // Flatten subtasks from all activities
+    const allSubtasks = activities.flatMap(activity => {
+        return (activity.subtasks || []).map(subtask => ({
+            ...subtask,
+            parentActivity: {
+                id: activity.id,
+                title: activity.title,
+                type: activity.type,
+                course: activity.course,
+                weight: activity.weight,
+                due_date: activity.due_date
+            }
+        }));
+    });
+
     const getNextDaysStr = (days) => {
         const d = new Date();
         d.setDate(d.getDate() + days);
@@ -101,36 +121,48 @@ const HoyPage = () => {
     };
     const nextDaysStr = daysFilter !== '' ? getNextDaysStr(daysFilter) : null;
 
-    const filteredActivities = activities.filter(a => {
-        if (courseFilter !== 'Todos' && a.course !== courseFilter) return false;
+    const filteredSubtasks = allSubtasks.filter(s => {
+        if (courseFilter !== 'Todos' && s.parentActivity.course !== courseFilter) return false;
 
-        const isCompleted = a.completed === a.total && a.total > 0;
+        const isCompleted = s.status === 'completed' || s.status === 'done';
+        // Never show completed tasks in 'Hoy'
+        if (isCompleted) return false;
+
         if (statusFilter === 'Pendientes' && isCompleted) return false;
         if (statusFilter === 'Completados' && !isCompleted) return false;
 
         return true;
     });
 
-    const vencidas = filteredActivities.filter(a => a.due_date < todayStr);
-    const paraHoy = filteredActivities.filter(a => a.due_date === todayStr);
-    const proximas = filteredActivities.filter(a => a.due_date > todayStr && (!nextDaysStr || a.due_date <= nextDaysStr));
+    // We use target_date for subtasks, fallback to parent due_date if not set
+    const getSubtaskDate = (s) => s.target_date || s.parentActivity.due_date;
 
-    const ActivityCard = ({ activity, badgeText, badgeClassName }) => {
+    const vencidas = filteredSubtasks.filter(s => getSubtaskDate(s) < todayStr);
+    const paraHoy = filteredSubtasks.filter(s => getSubtaskDate(s) === todayStr);
+    const proximas = filteredSubtasks.filter(s => getSubtaskDate(s) > todayStr && (!nextDaysStr || getSubtaskDate(s) <= nextDaysStr));
+
+    const SubtaskCard = ({ subtask, badgeText, badgeClassName }) => {
+        const parent = subtask.parentActivity;
         let icon = '📝';
-        if (activity.type === 'project') icon = '💻';
-        if (activity.type === 'exam' || activity.type === 'quiz') icon = '📚';
-        if (activity.type === 'presentation') icon = '📊';
+        if (parent.type === 'project') icon = '💻';
+        if (parent.type === 'exam' || parent.type === 'quiz') icon = '📚';
+        if (parent.type === 'presentation') icon = '📊';
+
+        const sDate = getSubtaskDate(subtask);
 
         return (
             <div className="bg-white border border-zinc-100 rounded-2xl p-5 hover:shadow-sm transition-all shadow-sm mb-4">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <Link to={`/actividad/${activity.id}`}>
-                            <h3 className="text-[17px] font-bold text-zinc-900 leading-tight mb-2 hover:text-blue-600 transition-colors">{activity.title}</h3>
+                        <Link to={`/actividad/${parent.id}`}>
+                            <h3 className="text-[17px] font-bold text-zinc-900 leading-tight mb-1 hover:text-blue-600 transition-colors">
+                                {subtask.title}
+                            </h3>
                         </Link>
+                        <p className="text-sm text-zinc-500 mb-2">De: {parent.title}</p>
                         <div className="flex items-center gap-2 text-sm text-zinc-500 font-medium">
                             <span>{icon}</span>
-                            {ACTIVITY_TYPES_MAP[activity.type] || activity.type} {activity.course ? `- ${activity.course}` : ''}
+                            {ACTIVITY_TYPES_MAP[parent.type] || parent.type} {parent.course ? `- ${parent.course}` : ''}
                         </div>
                     </div>
                     {badgeText && (
@@ -143,12 +175,14 @@ const HoyPage = () => {
                 <div className="flex items-center gap-5 text-zinc-400 text-xs font-semibold mb-6">
                     <div className="flex items-center gap-1.5">
                         <Calendar size={14} />
-                        {formatDateShort(activity.due_date)}
+                        {formatDateShort(sDate)} {subtask.target_date ? '(Planificada)' : '(Límite act.)'}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <Clock size={14} />
-                        {activity.weight ? `${activity.weight}% del curso` : 'Sin peso asignado'}
-                    </div>
+                    {subtask.estimated_hours && (
+                        <div className="flex items-center gap-1.5">
+                            <Clock size={14} />
+                            {subtask.estimated_hours}h estimadas
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex gap-3">
@@ -174,10 +208,10 @@ const HoyPage = () => {
                         Vencidas
                         <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{vencidas.length}</span>
                     </h2>
-                    {vencidas.map(act => (
-                        <ActivityCard
-                            key={act.id}
-                            activity={act}
+                    {vencidas.map(sub => (
+                        <SubtaskCard
+                            key={sub.id}
+                            subtask={sub}
                             badgeText="Vencida"
                             badgeClassName="bg-red-600 text-white"
                         />
@@ -191,10 +225,10 @@ const HoyPage = () => {
                         Para hoy
                         <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{paraHoy.length}</span>
                     </h2>
-                    {paraHoy.map(act => (
-                        <ActivityCard
-                            key={act.id}
-                            activity={act}
+                    {paraHoy.map(sub => (
+                        <SubtaskCard
+                            key={sub.id}
+                            subtask={sub}
                             badgeText="Para hoy"
                             badgeClassName="bg-blue-500 text-white"
                         />
@@ -208,10 +242,10 @@ const HoyPage = () => {
                         Próximas {daysFilter !== '' ? `(${daysFilter} días)` : ''}
                         <span className="bg-zinc-200 text-zinc-600 text-xs px-2 py-0.5 rounded-full">{proximas.length}</span>
                     </h2>
-                    {proximas.map(act => (
-                        <ActivityCard
-                            key={act.id}
-                            activity={act}
+                    {proximas.map(sub => (
+                        <SubtaskCard
+                            key={sub.id}
+                            subtask={sub}
                             badgeText="Pendiente"
                             badgeClassName="bg-zinc-200 text-zinc-600"
                         />
@@ -221,7 +255,7 @@ const HoyPage = () => {
 
             {vencidas.length === 0 && paraHoy.length === 0 && proximas.length === 0 && (
                 <div className="text-center py-10">
-                    <p className="text-zinc-500 font-medium">No hay actividades que coincidan con los filtros en este rango de fechas.</p>
+                    <p className="text-zinc-500 font-medium">No hay tareas que coincidan con los filtros en este rango de fechas.</p>
                 </div>
             )}
         </div>
