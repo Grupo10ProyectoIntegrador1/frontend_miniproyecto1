@@ -90,15 +90,13 @@ const HoyPage = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
                     <span className="font-bold text-white block mb-1">¿Cómo se ordena?</span>
-                    Las actividades se agrupan por prioridad temporal (Vencidas, Hoy, Próximas). Dentro de cada grupo, se ordenan cronológicamente por la fecha límite más cercana para facilitarte la planificación diaria.
+                    Las tareas se agrupan por prioridad temporal (Vencidas, Hoy, Próximas). Dentro de cada grupo, se ordenan cronológicamente por la fecha límite más cercana para facilitarte la planificación diaria.
                 </div>
             </div>
         </div>
     );
 
-    // Logic to filter and group activities
     const todayStr = getLocalTodayStr();
-    // Flatten subtasks from all activities
     const allSubtasks = activities.flatMap(activity => {
         return (activity.subtasks || []).map(subtask => ({
             ...subtask,
@@ -127,23 +125,28 @@ const HoyPage = () => {
         if (courseFilter !== 'Todos' && s.parentActivity.course !== courseFilter) return false;
 
         const isCompleted = s.status === 'completed' || s.status === 'done';
-        // Never show completed tasks in 'Hoy'
-        if (isCompleted && statusFilter !== 'Completada') return false; // Only filter out if not explicitly looking for completed
-
+        if (isCompleted && statusFilter !== 'Completada') return false;  
         if (statusFilter === 'Pendiente' && s.status !== 'pending') return false;
-        if (statusFilter === 'Completada' && s.status !== 'done') return false; // This technically won't render anything here due to line 125 but it keeps logic consistent.
+        if (statusFilter === 'Completada' && s.status !== 'done') return false;
         if (statusFilter === 'Postergada' && s.status !== 'postponed') return false;
         if (statusFilter === 'Vencida' && s.status !== 'overdue') return false;
 
         return true;
     });
 
-    // We use target_date for subtasks, fallback to parent due_date if not set
     const getSubtaskDate = (s) => s.target_date || s.parentActivity.due_date;
 
-    const vencidas = filteredSubtasks.filter(s => getSubtaskDate(s) < todayStr);
-    const paraHoy = filteredSubtasks.filter(s => getSubtaskDate(s) === todayStr);
-    const proximas = filteredSubtasks.filter(s => getSubtaskDate(s) > todayStr && (!nextDaysStr || getSubtaskDate(s) <= nextDaysStr));
+    const vencidas = filteredSubtasks
+        .filter(s => getSubtaskDate(s) < todayStr)
+        .sort((a, b) => getSubtaskDate(a).localeCompare(getSubtaskDate(b)));
+
+    const paraHoy = filteredSubtasks
+        .filter(s => getSubtaskDate(s) === todayStr)
+        .sort((a, b) => getSubtaskDate(a).localeCompare(getSubtaskDate(b)));
+
+    const proximas = filteredSubtasks
+        .filter(s => getSubtaskDate(s) > todayStr && (!nextDaysStr || getSubtaskDate(s) <= nextDaysStr))
+        .sort((a, b) => getSubtaskDate(a).localeCompare(getSubtaskDate(b)));
 
     const SubtaskCard = ({ subtask, badgeText, badgeClassName }) => {
         const parent = subtask.parentActivity;
