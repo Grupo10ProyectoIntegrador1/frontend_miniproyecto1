@@ -49,7 +49,7 @@ export default function LoginPage() {
         if (result.success) {
             navigate('/hoy');
         } else {
-            setGlobalError(result.error || 'Credenciales inválidas');
+            setGlobalError('Usuario o contraseña incorrectos. Inténtalo de nuevo.');
         }
 
         setIsLoading(false);
@@ -64,12 +64,6 @@ export default function LoginPage() {
                         Iniciar Sesión
                     </h1>
 
-                    {globalError && (
-                        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl text-center text-lg">
-                            {globalError}
-                        </div>
-                    )}
-
                     <form className="space-y-6 md:space-y-10" onSubmit={handleSubmit}>
                         {/* Email Input */}
                         <div className="space-y-4">
@@ -79,9 +73,12 @@ export default function LoginPage() {
                             <input
                                 type="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    if (globalError) setGlobalError('');
+                                }}
                                 placeholder="Ingresa tu correo electrónico"
-                                className={`w-full px-4 py-3 md:px-6 md:py-5 text-base md:text-xl rounded-xl md:rounded-2xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
+                                className={`w-full px-4 py-3 md:px-6 md:py-5 text-base md:text-xl rounded-xl md:rounded-2xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 ${fieldErrors.email || globalError ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
                                     }`}
                             />
                             {fieldErrors.email && (
@@ -98,9 +95,12 @@ export default function LoginPage() {
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (globalError) setGlobalError('');
+                                    }}
                                     placeholder="Ingresa tu contraseña"
-                                    className={`w-full px-4 py-3 md:px-6 md:py-5 text-base md:text-xl rounded-xl md:rounded-2xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 pr-12 md:pr-16 ${fieldErrors.password ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
+                                    className={`w-full px-4 py-3 md:px-6 md:py-5 text-base md:text-xl rounded-xl md:rounded-2xl bg-gray-100 border-2 focus:bg-white focus:ring-0 outline-none transition-all placeholder:text-gray-400 pr-12 md:pr-16 ${fieldErrors.password || globalError ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-blue-500'
                                         }`}
                                 />
                                 <button
@@ -117,6 +117,9 @@ export default function LoginPage() {
                             </div>
                             {fieldErrors.password && (
                                 <p className="text-red-500 text-sm mt-1">{fieldErrors.password}</p>
+                            )}
+                            {globalError && !fieldErrors.password && (
+                                <p className="text-red-500 text-sm font-semibold mt-1">{globalError}</p>
                             )}
                         </div>
 

@@ -43,9 +43,6 @@ const ActivityPage = () => {
     const renderHeader = () => (
         <div className="flex justify-between items-start mb-10 pb-6 border-b border-zinc-100">
             <div className="flex gap-4">
-                <div className="mt-1 p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-100">
-                    <LayoutList size={28} strokeWidth={2.5} />
-                </div>
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Actividades</h1>
                     <p className="text-zinc-500 text-sm font-medium">

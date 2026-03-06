@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useActivities } from '../hooks/useActivities';
-import { UserCircle, BookOpen, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, RotateCcw, Loader2, Coffee } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useTodaySubtasks } from '../hooks/useTodaySubtasks';
+import { getActivities } from '../services/activityService';
+import { UserCircle, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, RotateCcw, Loader2, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getLocalTodayStr } from '../utils/dateUtils';
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -12,6 +12,21 @@ const ACTIVITY_TYPES_MAP = {
     'presentation': 'Presentación'
 };
 
+const STATUS_TO_API = {
+    'Todos': '',
+    'Pendiente': 'pending',
+    'Completada': 'done',
+    'Postergada': 'postponed',
+    'Vencida': 'overdue',
+};
+
+const STATUS_BADGE = {
+    'pending':   { text: 'Pendiente',  className: 'bg-zinc-200 text-zinc-600' },
+    'done':      { text: 'Completada', className: 'bg-green-100 text-green-700' },
+    'postponed': { text: 'Postergada', className: 'bg-yellow-100 text-yellow-700' },
+    'overdue':   { text: 'Vencida',    className: 'bg-red-600 text-white' },
+};
+
 const formatDateShort = (dateStr) => {
     if (!dateStr) return '';
     const d = new Date(dateStr + "T00:00:00");
@@ -19,12 +34,45 @@ const formatDateShort = (dateStr) => {
     return `${d.getDate()} ${months[d.getMonth()]}`;
 };
 
-const HoyPage = () => {
-    const { activities = [], viewState, reload } = useActivities();
+const getBadge = (subtask, groupDefault) => {
+    return STATUS_BADGE[subtask.status] || groupDefault;
+};
 
-    const [daysFilter, setDaysFilter] = useState('');
+const HoyPage = () => {
+    const { data, viewState, setFilters, reload } = useTodaySubtasks();
+    const { overdue, today: todayTasks, upcoming } = data;
+
+    const [courses, setCourses] = useState(['Todos']);
     const [courseFilter, setCourseFilter] = useState('Todos');
     const [statusFilter, setStatusFilter] = useState('Todos');
+    const [daysFilter, setDaysFilter] = useState('');
+
+    // Cargar lista de cursos para el dropdown
+    useEffect(() => {
+        getActivities()
+            .then(activities => {
+                const unique = [...new Set(activities.map(a => a.course).filter(Boolean))];
+                setCourses(['Todos', ...unique]);
+            })
+            .catch(() => {});
+    }, []);
+
+    const handleCourseChange = (value) => {
+        setCourseFilter(value);
+        setFilters(prev => ({ ...prev, course: value === 'Todos' ? '' : value }));
+    };
+
+    const handleStatusChange = (value) => {
+        setStatusFilter(value);
+        setFilters(prev => ({ ...prev, status: STATUS_TO_API[value] || '' }));
+    };
+
+    const handleDaysChange = (value) => {
+        setDaysFilter(value);
+        setFilters(prev => ({ ...prev, days: value }));
+    };
+
+    const hasActiveFilters = courseFilter !== 'Todos' || statusFilter !== 'Todos' || daysFilter !== '';
 
     const renderHeader = () => (
         <div className="flex justify-between items-start mb-8 pb-0">
@@ -44,15 +92,13 @@ const HoyPage = () => {
         </div>
     );
 
-    const courses = ['Todos', ...new Set(activities.map(a => a.course).filter(Boolean))];
-
     const renderFilters = () => (
         <div className="flex flex-wrap items-end gap-6 mb-10 pb-6 border-b border-zinc-100">
             <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-zinc-500">Curso</label>
                 <select
                     value={courseFilter}
-                    onChange={(e) => setCourseFilter(e.target.value)}
+                    onChange={(e) => handleCourseChange(e.target.value)}
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
                 >
                     {courses.map(c => <option key={c} value={c}>{c}</option>)}
@@ -62,7 +108,7 @@ const HoyPage = () => {
                 <label className="text-xs font-semibold text-zinc-500">Estado</label>
                 <select
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => handleStatusChange(e.target.value)}
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
                 >
                     <option value="Todos">Todos</option>
@@ -77,7 +123,7 @@ const HoyPage = () => {
                 <input
                     type="number"
                     value={daysFilter}
-                    onChange={(e) => setDaysFilter(e.target.value === '' ? '' : Number(e.target.value))}
+                    onChange={(e) => handleDaysChange(e.target.value === '' ? '' : Number(e.target.value))}
                     min={0}
                     placeholder="Todos"
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white w-20"
@@ -89,70 +135,21 @@ const HoyPage = () => {
                     ¿Cómo se ordena?
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
-                    <span className="font-bold text-white block mb-1">¿Cómo se ordena?</span>
-                    Las actividades se agrupan por prioridad temporal (Vencidas, Hoy, Próximas). Dentro de cada grupo, se ordenan cronológicamente por la fecha límite más cercana para facilitarte la planificación diaria.
+                    <span className="font-bold text-white block mb-1">Regla de prioridad</span>
+                    Las subtareas se agrupan en Vencidas, Para hoy y Próximas según su fecha objetivo.
+                    Dentro de cada grupo se ordenan por fecha (más antigua/cercana primero).
+                    En caso de empate, se muestra primero la de menor esfuerzo estimado.
                 </div>
             </div>
         </div>
     );
 
-    // Logic to filter and group activities
-    const todayStr = getLocalTodayStr();
-    // Flatten subtasks from all activities
-    const allSubtasks = activities.flatMap(activity => {
-        return (activity.subtasks || []).map(subtask => ({
-            ...subtask,
-            parentActivity: {
-                id: activity.id,
-                title: activity.title,
-                type: activity.type,
-                course: activity.course,
-                weight: activity.weight,
-                due_date: activity.due_date
-            }
-        }));
-    });
-
-    const getNextDaysStr = (days) => {
-        const d = new Date();
-        d.setDate(d.getDate() + days);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-    const nextDaysStr = daysFilter !== '' ? getNextDaysStr(daysFilter) : null;
-
-    const filteredSubtasks = allSubtasks.filter(s => {
-        if (courseFilter !== 'Todos' && s.parentActivity.course !== courseFilter) return false;
-
-        const isCompleted = s.status === 'completed' || s.status === 'done';
-        // Never show completed tasks in 'Hoy'
-        if (isCompleted && statusFilter !== 'Completada') return false; // Only filter out if not explicitly looking for completed
-
-        if (statusFilter === 'Pendiente' && s.status !== 'pending') return false;
-        if (statusFilter === 'Completada' && s.status !== 'done') return false; // This technically won't render anything here due to line 125 but it keeps logic consistent.
-        if (statusFilter === 'Postergada' && s.status !== 'postponed') return false;
-        if (statusFilter === 'Vencida' && s.status !== 'overdue') return false;
-
-        return true;
-    });
-
-    // We use target_date for subtasks, fallback to parent due_date if not set
-    const getSubtaskDate = (s) => s.target_date || s.parentActivity.due_date;
-
-    const vencidas = filteredSubtasks.filter(s => getSubtaskDate(s) < todayStr);
-    const paraHoy = filteredSubtasks.filter(s => getSubtaskDate(s) === todayStr);
-    const proximas = filteredSubtasks.filter(s => getSubtaskDate(s) > todayStr && (!nextDaysStr || getSubtaskDate(s) <= nextDaysStr));
-
     const SubtaskCard = ({ subtask, badgeText, badgeClassName }) => {
-        const parent = subtask.parentActivity;
+        const parent = subtask.parent_activity;
         let icon = '📝';
         if (parent.type === 'project') icon = '💻';
         if (parent.type === 'exam' || parent.type === 'quiz') icon = '📚';
         if (parent.type === 'presentation') icon = '📊';
-
-        const sDate = getSubtaskDate(subtask);
 
         return (
             <div className="bg-white border border-zinc-100 rounded-2xl p-5 hover:shadow-sm transition-all shadow-sm mb-4">
@@ -179,7 +176,7 @@ const HoyPage = () => {
                 <div className="flex items-center gap-5 text-zinc-400 text-xs font-semibold mb-6">
                     <div className="flex items-center gap-1.5">
                         <Calendar size={14} />
-                        {formatDateShort(sDate)} {subtask.target_date ? '(Planificada)' : '(Límite act.)'}
+                        {formatDateShort(subtask.target_date)}
                     </div>
                     {subtask.estimated_hours && (
                         <div className="flex items-center gap-1.5">
@@ -206,72 +203,43 @@ const HoyPage = () => {
 
     const renderSuccess = () => (
         <div className="flex flex-col gap-8">
-            {vencidas.length > 0 && (
+            {overdue.length > 0 && (
                 <section>
                     <h2 className="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
                         Vencidas
-                        <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{vencidas.length}</span>
+                        <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{overdue.length}</span>
                     </h2>
-                    {vencidas.map(sub => (
-                        <SubtaskCard
-                            key={sub.id}
-                            subtask={sub}
-                            badgeText="Vencida"
-                            badgeClassName="bg-red-600 text-white"
-                        />
-                    ))}
+                    {overdue.map(sub => {
+                        const badge = getBadge(sub, { text: 'Vencida', className: 'bg-red-600 text-white' });
+                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                    })}
                 </section>
             )}
 
-            {paraHoy.length > 0 && (
+            {todayTasks.length > 0 && (
                 <section>
                     <h2 className="text-xl font-bold text-blue-500 mb-4 flex items-center gap-2">
                         Para hoy
-                        <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{paraHoy.length}</span>
+                        <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{todayTasks.length}</span>
                     </h2>
-                    {paraHoy.map(sub => (
-                        <SubtaskCard
-                            key={sub.id}
-                            subtask={sub}
-                            badgeText="Para hoy"
-                            badgeClassName="bg-blue-500 text-white"
-                        />
-                    ))}
+                    {todayTasks.map(sub => {
+                        const badge = getBadge(sub, { text: 'Para hoy', className: 'bg-blue-500 text-white' });
+                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                    })}
                 </section>
             )}
 
-            {proximas.length > 0 && (
+            {upcoming.length > 0 && (
                 <section className="mb-10">
                     <h2 className="text-xl font-bold text-zinc-800 mb-4 flex items-center gap-2">
                         Próximas {daysFilter !== '' ? `(${daysFilter} días)` : ''}
-                        <span className="bg-zinc-200 text-zinc-600 text-xs px-2 py-0.5 rounded-full">{proximas.length}</span>
+                        <span className="bg-zinc-200 text-zinc-600 text-xs px-2 py-0.5 rounded-full">{upcoming.length}</span>
                     </h2>
-                    {proximas.map(sub => (
-                        <SubtaskCard
-                            key={sub.id}
-                            subtask={sub}
-                            badgeText="Pendiente"
-                            badgeClassName="bg-zinc-200 text-zinc-600"
-                        />
-                    ))}
+                    {upcoming.map(sub => {
+                        const badge = getBadge(sub, { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' });
+                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                    })}
                 </section>
-            )}
-
-            {vencidas.length === 0 && paraHoy.length === 0 && proximas.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-32 text-center">
-                    {(courseFilter !== 'Todos' || statusFilter !== 'Todos' || daysFilter !== '') ? (
-                        <p className="text-zinc-500 font-medium">
-                            No hay tareas que coincidan con los filtros aplicados en este rango de fechas.
-                        </p>
-                    ) : (
-                        <div className="flex flex-col items-center text-zinc-400">
-                            <Coffee size={64} strokeWidth={1.5} className="mb-4 text-zinc-300" />
-                            <p className="font-medium text-zinc-500 text-lg">
-                                No hay tareas programadas.
-                            </p>
-                        </div>
-                    )}
-                </div>
             )}
         </div>
     );
@@ -291,12 +259,22 @@ const HoyPage = () => {
             {viewState === 'success' && renderSuccess()}
 
             {viewState === 'empty' && (
-                <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in duration-500">
-                    <BookOpen className="text-[#1e293b] mb-6" size={80} strokeWidth={1.5} />
-                    <h3 className="text-[22px] font-medium text-[#1e293b] mb-8">¿Deseas crear tu primera actividad?</h3>
-                    <Link to="/crear" className="bg-[#3b82f6] hover:bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">
-                        Crear actividad
-                    </Link>
+                <div className="flex flex-col items-center justify-center py-32 text-center">
+                    {hasActiveFilters ? (
+                        <p className="text-zinc-500 font-medium">
+                            No hay tareas que coincidan con los filtros aplicados.
+                        </p>
+                    ) : (
+                        <div className="flex flex-col items-center animate-in fade-in zoom-in duration-500">
+                            <Coffee size={64} strokeWidth={1.5} className="mb-4 text-zinc-300" />
+                            <p className="font-medium text-zinc-500 text-lg mb-6">
+                                No hay tareas programadas.
+                            </p>
+                            <Link to="/crear" className="bg-[#3b82f6] hover:bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">
+                                Crear actividad
+                            </Link>
+                        </div>
+                    )}
                 </div>
             )}
 

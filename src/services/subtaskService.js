@@ -23,4 +23,17 @@ export const deleteSubtask = async (id) => {
     return response.data
 }
 
+// GET /api/subtasks/today/
+export const getTodaySubtasks = async (params = {}) => {
+    const query = new URLSearchParams()
+    if (params.course) query.append('course', params.course)
+    if (params.status) query.append('status', params.status)
+    if (params.days !== undefined && params.days !== '') query.append('days', params.days)
+    
+    const queryStr = query.toString()
+    const url = queryStr ? `/subtasks/today/?${queryStr}` : '/subtasks/today/'
+    const response = await api.get(url)
+    return response.data.data  // { overdue: [...], today: [...], upcoming: [...] }
+}
+
 
