@@ -1,17 +1,17 @@
 import React from 'react';
-import { 
-    Calendar, 
-    Eye, 
-    Pencil, 
-    Trash2, 
-    Plus, 
-    UserCircle, 
-    Loader2, 
+import {
+    Calendar,
+    Eye,
+    Pencil,
+    Trash2,
+    Plus,
+    UserCircle,
+    Loader2,
     BookOpen,
     AlertCircle,
     LayoutList
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useActivities } from '../hooks/useActivities';
 import { deleteActivity } from '../services/activityService';
 
@@ -25,7 +25,6 @@ const ACTIVITY_TYPES_MAP = {
 
 const ActivityPage = () => {
     const { activities = [], viewState, reload } = useActivities();
-    const navigate = useNavigate()
     const [deletingId, setDeletingId] = React.useState(null)
 
     const handleDelete = async (id) => {
@@ -34,7 +33,7 @@ const ActivityPage = () => {
         try {
             await deleteActivity(id)
             reload() // Recarga la lista después de eliminar
-        } catch (err) {
+        } catch {
             alert('Ocurrió un error al eliminar la actividad. Intenta de nuevo.')
         } finally {
             setDeletingId(null)
@@ -42,30 +41,27 @@ const ActivityPage = () => {
     }
 
     const renderHeader = () => (
-    <div className="flex justify-between items-start mb-10 pb-6 border-b border-zinc-100">
-        <div className="flex gap-4">
-            <div className="mt-1 p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-100">
-                <LayoutList size={28} strokeWidth={2.5} />
+        <div className="flex justify-between items-start mb-10 pb-6 border-b border-zinc-100">
+            <div className="flex gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Actividades</h1>
+                    <p className="text-zinc-500 text-sm font-medium">
+                        Gestiona y planifica tus compromisos académicos
+                    </p>
+                </div>
             </div>
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Actividades</h1>
-                <p className="text-zinc-500 text-sm font-medium">
-                    Gestiona y planifica tus compromisos académicos
-                </p>
-            </div>
-        </div>
-        
-        <div className="hidden md:flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200 shadow-sm">
-            <div className="text-right">
-                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
-                <span className="font-bold text-sm text-zinc-800">Estudiante</span>
-            </div>
-            <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
-                <UserCircle size={32} strokeWidth={1.5} />
+
+            <div className="hidden md:flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200 shadow-sm">
+                <div className="text-right">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
+                    <span className="font-bold text-sm text-zinc-800">Estudiante</span>
+                </div>
+                <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
+                    <UserCircle size={32} strokeWidth={1.5} />
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
 
     if (viewState === 'loading') {
         return (
@@ -109,13 +105,13 @@ const ActivityPage = () => {
                                             </span>
                                         )}
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-4 text-zinc-400 text-xs mt-3">
                                         <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded font-bold uppercase text-[10px]">
                                             {ACTIVITY_TYPES_MAP[activity.type] || activity.type}
                                         </span>
                                         <div className="flex items-center gap-1">
-                                            <Calendar size={14} /> 
+                                            <Calendar size={14} />
                                             <span>Límite: {activity.due_date}</span>
                                         </div>
                                     </div>
@@ -127,24 +123,24 @@ const ActivityPage = () => {
                             </div>
 
                             <div className="flex gap-3 mt-6 pt-4 border-t border-zinc-50">
-                                <Link 
-                                    to={`/actividad/${activity.id}`} 
+                                <Link
+                                    to={`/actividad/${activity.id}`}
                                     className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-blue-600 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg"
                                 >
                                     <Eye size={14} /> Ver
                                 </Link>
-                                <Link 
+                                <Link
                                     to={`/actividad/${activity.id}?edit=true`}
                                     className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg"
                                 >
                                     <Pencil size={14} /> Editar
                                 </Link>
-                                <button 
+                                <button
                                     onClick={() => handleDelete(activity.id)}
                                     disabled={deletingId === activity.id}
                                     className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg disabled:opacity-50"
                                 >
-                                    <Trash2 size={14} /> 
+                                    <Trash2 size={14} />
                                     {deletingId === activity.id ? 'Eliminando...' : 'Eliminar'}
                                 </button>
                             </div>
@@ -171,8 +167,8 @@ const ActivityPage = () => {
                     </div>
                     <p className="text-zinc-500 text-lg font-medium max-w-sm leading-relaxed">
                         Ha ocurrido un error cargando las actividades, . <br />
-                        <span 
-                            className="text-blue-600 cursor-pointer hover:underline" 
+                        <span
+                            className="text-blue-600 cursor-pointer hover:underline"
                             onClick={() => window.location.reload()}
                         >
                             intentelo de nuevo
