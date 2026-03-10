@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Plus, Calendar, ListTodo, BarChart2, LogIn, LogOut, Loader2, User } from "lucide-react";
+import { Plus, Calendar, ListTodo, BarChart2, LogIn, LogOut, Loader2, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../context/useAuth";
 import { useState } from "react";
 import logo from '../../assets/bb51bc4eb2882c49a664ff7c04a240151df066fc.png';
@@ -10,7 +10,7 @@ const navItems = [
     { to: '/progreso', label: 'Progreso', icon: BarChart2 },
 ]
 
-function Sidebar() {
+function Sidebar({ isExpanded, setIsExpanded }) {
     const { isAuthenticated, logout } = useAuth();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -24,30 +24,39 @@ function Sidebar() {
     };
 
     return (
-        <aside className="h-screen w-64 bg-[#232836] text-slate-300 flex flex-col px-4 py-8 fixed left-0 top-0">
+        <aside className={`h-screen bg-[#232836] text-slate-300 flex flex-col fixed left-0 top-0 transition-all duration-300 ease-in-out z-50 ${isExpanded ? 'w-64 px-4 py-8' : 'w-20 px-2 py-8'}`}>
+            {/* Botón para expandir/contraer el sidebar */}
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="absolute top-24 -right-4 w-8 h-8 bg-[#232836] border border-slate-700 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-700 hover:text-white transition-all z-50 shadow-md"
+                title={isExpanded ? "Contraer menú" : "Expandir menú"}
+            >
+                {isExpanded ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+            </button>
 
             {/* Logo */}
-            <div className="flex items-center gap-3 mb-10 px-2">
-                <img src={logo} alt="Floz Logo" className="w-12 h-12 object-contain" />
-                <h1 className="text-2xl font-bold text-white tracking-wide">Planificador</h1>
+            <div className={`flex items-center mb-10 transition-all ${isExpanded ? 'gap-3 px-2' : 'justify-center'}`}>
+                <img src={logo} alt="Floz Logo" className={`object-contain transition-all duration-300 ${isExpanded ? 'w-12 h-12' : 'w-10 h-10'}`} />
+                {isExpanded && <h1 className="text-2xl font-bold text-white tracking-wide whitespace-nowrap">Planificador</h1>}
             </div>
 
             {/* Links de navegación */}
-            <nav className="flex flex-col gap-2 flex-1">
-                {/* Botón especial para Hoy */}
+            <nav className="flex flex-col gap-2 flex-1 mt-4">
                 <NavLink
                     to="/hoy"
                     className={({ isActive }) =>
-                        `flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium transition-all ${isActive
+                        `flex items-center rounded-xl text-[15px] font-medium transition-all ${isExpanded ? 'gap-4 px-4 py-3' : 'justify-center p-3'
+                        } ${isActive
                             ? 'bg-[#3b82f6] text-white shadow-md'
                             : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
                         }`
                     }
+                    title={!isExpanded ? 'Hoy' : ''}
                 >
                     {({ isActive }) => (
                         <>
-                            <Plus size={20} className={isActive ? 'text-white' : 'text-slate-400'} />
-                            Hoy
+                            <Plus size={20} className={isActive ? 'text-white' : 'text-slate-400 flex-shrink-0'} />
+                            {isExpanded && <span className="whitespace-nowrap">Hoy</span>}
                         </>
                     )}
                 </NavLink>
@@ -59,16 +68,18 @@ function Sidebar() {
                             key={item.to}
                             to={item.to}
                             className={({ isActive }) =>
-                                `flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium transition-all ${isActive
+                                `flex items-center rounded-xl text-[15px] font-medium transition-all ${isExpanded ? 'gap-4 px-4 py-3' : 'justify-center p-3'
+                                } ${isActive
                                     ? 'bg-[#3b82f6] text-white shadow-md'
                                     : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
                                 }`
                             }
+                            title={!isExpanded ? item.label : ''}
                         >
                             {({ isActive }) => (
                                 <>
-                                    <Icon size={20} className={isActive ? 'text-white' : 'text-slate-400'} />
-                                    {item.label}
+                                    <Icon size={20} className={isActive ? 'text-white' : 'text-slate-400 flex-shrink-0'} />
+                                    {isExpanded && <span className="whitespace-nowrap">{item.label}</span>}
                                 </>
                             )}
                         </NavLink>
@@ -78,34 +89,57 @@ function Sidebar() {
 
             {/* Acciones de cuenta al fondo */}
             {isAuthenticated ? (
-                <div className="mt-auto border-t border-slate-700/50 pt-6 px-2 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm">
-                            <User size={20} />
-                        </div>
-                        <span className="text-[15px] font-medium text-slate-300">Estudiante</span>
-                    </div>
-                    {isLoggingOut ? (
-                        <Loader2 size={20} className="animate-spin text-slate-400" />
+                <div className={`mt-auto border-t border-slate-700/50 pt-6 flex items-center ${isExpanded ? 'px-2 justify-between' : 'flex-col justify-center gap-4'}`}>
+                    {isExpanded ? (
+                        <>
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0">
+                                    <User size={20} />
+                                </div>
+                                <span className="text-[15px] font-medium text-slate-300 truncate">Estudiante</span>
+                            </div>
+                            {isLoggingOut ? (
+                                <Loader2 size={20} className="animate-spin text-slate-400 flex-shrink-0" />
+                            ) : (
+                                <button
+                                    onClick={handleLogout}
+                                    disabled={isLoggingOut}
+                                    className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex-shrink-0"
+                                    title="Cerrar sesión"
+                                >
+                                    <LogOut size={20} />
+                                </button>
+                            )}
+                        </>
                     ) : (
-                        <button
-                            onClick={handleLogout}
-                            disabled={isLoggingOut}
-                            className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50"
-                            title="Cerrar sesión"
-                        >
-                            <LogOut size={20} />
-                        </button>
+                        <>
+                            <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0" title="Perfil de Estudiante">
+                                <User size={20} />
+                            </div>
+                            {isLoggingOut ? (
+                                <Loader2 size={20} className="animate-spin text-slate-400" />
+                            ) : (
+                                <button
+                                    onClick={handleLogout}
+                                    disabled={isLoggingOut}
+                                    className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50"
+                                    title="Cerrar sesión"
+                                >
+                                    <LogOut size={20} />
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             ) : (
-                <div className="mt-auto border-t border-slate-700/50 pt-6 px-2">
+                <div className="mt-auto border-t border-slate-700/50 pt-6 px-2 flex justify-center">
                     <NavLink
                         to="/login"
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                        className={`flex items-center gap-3 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors ${isExpanded ? 'px-3 py-2 w-full' : 'p-3 justify-center'}`}
+                        title={!isExpanded ? "Iniciar sesión" : ""}
                     >
-                        <LogIn size={20} />
-                        Iniciar sesión
+                        <LogIn size={20} className="flex-shrink-0" />
+                        {isExpanded && <span className="whitespace-nowrap">Iniciar sesión</span>}
                     </NavLink>
                 </div>
             )}
