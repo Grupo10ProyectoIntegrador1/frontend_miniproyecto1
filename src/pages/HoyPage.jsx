@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTodaySubtasks } from '../hooks/useTodaySubtasks';
 import { getActivities } from '../services/activityService';
-import { UserCircle, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, RotateCcw, Loader2, Coffee } from 'lucide-react';
+import { UserCircle, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ACTIVITY_TYPES_MAP = {
@@ -186,15 +186,15 @@ const HoyPage = () => {
                     )}
                 </div>
 
-                <div className="flex gap-3">
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2 rounded-xl transition-colors">
+                <div className="flex gap-2">
+                    <button className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
                         <CheckCircle2 size={18} /> Hecha
                     </button>
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-bold px-5 py-2 rounded-xl transition-colors">
-                        <Clock size={18} /> Posponer
+                    <button title="Posponer" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                        <Clock size={18} />
                     </button>
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-bold px-5 py-2 rounded-xl transition-colors">
-                        <RotateCcw size={18} /> Reprogramar
+                    <button title="Reprogramar" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                        <CalendarClock size={18} />
                     </button>
                 </div>
             </div>
