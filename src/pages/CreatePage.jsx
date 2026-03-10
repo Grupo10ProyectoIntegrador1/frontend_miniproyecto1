@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown, Plus, X, ListTodo } from 'lucide-react'
 import { createActivity } from '../services/activityService'
-import Modal from '../components/Modal' // ← agregar import
+import Modal from '../components/Modal'
 import SubtaskForm from '../components/activities/SubtaskForm'
 
 import { getLocalTodayStr } from '../utils/dateUtils'
@@ -61,7 +61,7 @@ function CreatePage() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [serverError, setServerError] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [showSuccessModal, setShowSuccessModal] = useState(false) // ← agregar
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [subtasks, setSubtasks] = useState([])
   const [showSubtaskForm, setShowSubtaskForm] = useState(false)
 
@@ -92,10 +92,10 @@ function CreatePage() {
         course: form.course.trim() || null,
         due_date: form.due_date,
         weight: form.weight !== '' ? parseFloat(form.weight) : null,
-        subtasks: subtasks // ← array con las subtareas a crear
+        subtasks: subtasks // array con las subtareas a crear
       }
       await createActivity(payload)
-      setShowSuccessModal(true) // ← mostrar modal en lugar de navegar directo
+      setShowSuccessModal(true) // mostrar modal en lugar de navegar directo
     } catch (err) {
       // Intenta mostrar el mensaje específico que manda Django
       const data = err.response?.data
@@ -135,8 +135,8 @@ function CreatePage() {
 
       {/* Header centrado */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Crear nueva actividad</h1>
-        <p className="text-gray-500 text-sm">Completa los datos de tu actividad evaluativa</p>
+        <h1 className="text-4xl font-extrabold text-[#0B1525] mb-2 tracking-tight">Crear nueva actividad</h1>
+        <p className="text-zinc-500 text-sm font-medium">Completa los datos de tu actividad evaluativa</p>
       </div>
 
       {/* Formulario */}

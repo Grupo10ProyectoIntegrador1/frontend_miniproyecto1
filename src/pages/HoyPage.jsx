@@ -251,7 +251,7 @@ const HoyPage = () => {
     );
 
     return (
-        <div className="p-8 max-w-5xl mx-auto min-h-screen bg-[#F8FAFC]">
+        <div className="p-8 w-full min-h-screen bg-[#F8FAFC]">
             {renderHeader()}
             {renderFilters()}
 

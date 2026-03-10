@@ -44,7 +44,7 @@ const ActivityPage = () => {
         <div className="flex justify-between items-start mb-10 pb-6 border-b border-zinc-100">
             <div className="flex gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Actividades</h1>
+                    <h1 className="text-4xl font-extrabold text-[#0B1525] mb-2 tracking-tight">Actividades</h1>
                     <p className="text-zinc-500 text-sm font-medium">
                         Gestiona y planifica tus compromisos académicos
                     </p>
