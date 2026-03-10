@@ -24,7 +24,7 @@ const ProgressPage = () => {
 
     const renderHeader = () => (
         <div className="flex justify-between items-center mb-8 border-b border-zinc-100 pb-4">
-            <h1 className="text-xl font-semibold text-zinc-800">Actividades</h1>
+            <h1 className="text-4xl font-extrabold text-[#0B1525] mb-2 tracking-tight">Progreso</h1>
             <div className="flex items-center gap-2 text-zinc-700">
                 <UserCircle className="text-blue-600" size={32} />
                 <span className="font-medium text-sm">Estudiante</span>
