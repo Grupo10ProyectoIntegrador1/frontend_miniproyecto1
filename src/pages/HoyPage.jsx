@@ -21,10 +21,10 @@ const STATUS_TO_API = {
 };
 
 const STATUS_BADGE = {
-    'pending':   { text: 'Pendiente',  className: 'bg-zinc-200 text-zinc-600' },
-    'done':      { text: 'Completada', className: 'bg-green-100 text-green-700' },
+    'pending': { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' },
+    'done': { text: 'Completada', className: 'bg-green-100 text-green-700' },
     'postponed': { text: 'Postergada', className: 'bg-yellow-100 text-yellow-700' },
-    'overdue':   { text: 'Vencida',    className: 'bg-red-600 text-white' },
+    'overdue': { text: 'Vencida', className: 'bg-red-600 text-white' },
 };
 
 const formatDateShort = (dateStr) => {
@@ -54,7 +54,7 @@ const HoyPage = () => {
                 const unique = [...new Set(activities.map(a => a.course).filter(Boolean))];
                 setCourses(['Todos', ...unique]);
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     const handleCourseChange = (value) => {
@@ -202,43 +202,49 @@ const HoyPage = () => {
     };
 
     const renderSuccess = () => (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-row gap-6 overflow-x-auto pb-8 items-start w-full snap-x">
             {overdue.length > 0 && (
-                <section>
-                    <h2 className="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
+                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                    <h2 className="text-xl font-bold text-red-600 mb-5 flex items-center gap-2">
                         Vencidas
                         <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{overdue.length}</span>
                     </h2>
-                    {overdue.map(sub => {
-                        const badge = getBadge(sub, { text: 'Vencida', className: 'bg-red-600 text-white' });
-                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                    })}
+                    <div className="flex flex-col">
+                        {overdue.map(sub => {
+                            const badge = getBadge(sub, { text: 'Vencida', className: 'bg-red-600 text-white' });
+                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                        })}
+                    </div>
                 </section>
             )}
 
             {todayTasks.length > 0 && (
-                <section>
-                    <h2 className="text-xl font-bold text-blue-500 mb-4 flex items-center gap-2">
+                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                    <h2 className="text-xl font-bold text-blue-500 mb-5 flex items-center gap-2">
                         Para hoy
                         <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{todayTasks.length}</span>
                     </h2>
-                    {todayTasks.map(sub => {
-                        const badge = getBadge(sub, { text: 'Para hoy', className: 'bg-blue-500 text-white' });
-                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                    })}
+                    <div className="flex flex-col">
+                        {todayTasks.map(sub => {
+                            const badge = getBadge(sub, { text: 'Para hoy', className: 'bg-blue-500 text-white' });
+                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                        })}
+                    </div>
                 </section>
             )}
 
             {upcoming.length > 0 && (
-                <section className="mb-10">
-                    <h2 className="text-xl font-bold text-zinc-800 mb-4 flex items-center gap-2">
+                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                    <h2 className="text-xl font-bold text-zinc-800 mb-5 flex items-center gap-2">
                         Próximas {daysFilter !== '' ? `(${daysFilter} días)` : ''}
                         <span className="bg-zinc-200 text-zinc-600 text-xs px-2 py-0.5 rounded-full">{upcoming.length}</span>
                     </h2>
-                    {upcoming.map(sub => {
-                        const badge = getBadge(sub, { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' });
-                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                    })}
+                    <div className="flex flex-col">
+                        {upcoming.map(sub => {
+                            const badge = getBadge(sub, { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' });
+                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                        })}
+                    </div>
                 </section>
             )}
         </div>
