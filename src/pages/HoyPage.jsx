@@ -124,7 +124,10 @@ const HoyPage = () => {
 
         setIsRescheduling(true);
         try {
-            await updateSubtask(rescheduleModal.subtask.id, { target_date: rescheduleModal.newDate });
+            await updateSubtask(rescheduleModal.subtask.id, {
+                target_date: rescheduleModal.newDate,
+                status: 'postponed'
+            });
 
             // Si todo sale bien
             setAlertModal({
@@ -183,10 +186,16 @@ const HoyPage = () => {
         try {
             await updateSubtask(reduceModal.subtask.id, {
                 target_date: reduceModal.newDate,
-                estimated_hours: reduceModal.newHours
+                estimated_hours: reduceModal.newHours,
+                status: 'postponed'
             });
 
-            // Éxito: solo cerramos y recargamos para no saturar de modales
+            setAlertModal({
+                isOpen: true,
+                type: 'success',
+                title: 'Horas reducidas',
+                message: 'La fecha y las horas de la subtarea se actualizaron correctamente.'
+            });
             handleCloseReduce();
             reload();
 
@@ -215,7 +224,6 @@ const HoyPage = () => {
             setIsReducing(false);
         }
     };
-
 
     const renderHeader = () => (
         <div className="flex justify-between items-start mb-8 pb-0">
@@ -438,82 +446,48 @@ const HoyPage = () => {
         <Modal
             isOpen={conflictModal.isOpen}
             onClose={() => setConflictModal({ isOpen: false, subtask: null, conflictData: null })}
-            title="¡Sobrecarga Detectada!"
+            title="Conflicto de sobrecarga"
+            hideFooter={true}
         >
             {conflictModal.conflictData && (
-                <div className="flex flex-col gap-4 text-gray-700">
-                    {/* Mensaje de advertencia */}
-                    <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-md">
-                        <p className="text-orange-700 font-medium">
-                            {conflictModal.conflictData.message}
-                        </p>
-                        <p className="text-sm text-orange-600 mt-1">
-                            Intentar realizar esta tarea superará tu límite diario. ¿Qué deseas hacer?
-                        </p>
-                    </div>
+                <div className="flex flex-col">
+                    <p className="text-[#94a3b8] font-medium text-[15px] mb-8">
+                        {conflictModal.conflictData.message}
+                    </p>
 
-                    {/* Opciones */}
-                    <div className="flex flex-col gap-3 mt-2">
+                    <p className="text-[#94a3b8] font-medium text-[15px] mb-3">
+                        ¿Cómo deseas resolverlo?
+                    </p>
 
-                        {/* Opción 1: Mover */}
-                        <button
-                            onClick={() => {
-                                // Cierra este modal y abre el de elegir fecha de nuevo
-                                const subtask = conflictModal.subtask;
-                                setConflictModal({ isOpen: false, subtask: null, conflictData: null });
-                                handleOpenReschedule(subtask);
-                            }}
-                            className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            <div>
-                                <span className="font-semibold text-gray-800 block">Elegir otra fecha</span>
-                                <span className="text-xs text-gray-500">Mover la tarea a un día con menos carga.</span>
-                            </div>
-                            <span className="text-gray-400">→</span>
-                        </button>
+                    <div className="flex justify-between items-end w-full">
+                        <div className="flex flex-col gap-2.5 items-start">
+                            <button
+                                onClick={() => {
+                                    const subtask = conflictModal.subtask;
+                                    setConflictModal({ isOpen: false, subtask: null, conflictData: null });
+                                    handleOpenReschedule(subtask);
+                                }}
+                                className="flex items-center gap-2 bg-[#3b82f6] text-white px-4 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-blue-600 transition-colors shadow-sm"
+                            >
+                                <Calendar size={18} strokeWidth={2.5} /> Mover a otro día
+                            </button>
 
-                        {/* Opción 2: Reducir */}
-                        <button
-                            onClick={() => {
-                                // Cierra este modal y abre el de reducir horas
-                                const subtask = conflictModal.subtask;
-                                // Para reducir, usamos la fecha que estábamos intentando asignar (que causó el conflicto).
-                                // La guardamos adicionalmente en conflictData.attemptedDate, o usamos la nueva del rescheduleModal
-                                const targetDate = conflictModal.conflictData.attemptedDate || rescheduleModal.newDate || subtask.target_date;
+                            <button
+                                onClick={() => {
+                                    const subtask = conflictModal.subtask;
+                                    const targetDate = conflictModal.conflictData.attemptedDate || rescheduleModal.newDate || subtask.target_date;
+                                    setConflictModal({ isOpen: false, subtask: null, conflictData: null });
+                                    handleOpenReduce(subtask, targetDate);
+                                }}
+                                className="flex items-center gap-2 bg-[#8b98a9] text-white px-4 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-[#7b8696] transition-colors shadow-sm"
+                            >
+                                <RotateCcw size={18} strokeWidth={2.5} /> Reducir horas estimadas
+                            </button>
+                        </div>
 
-                                setConflictModal({ isOpen: false, subtask: null, conflictData: null });
-                                handleOpenReduce(subtask, targetDate);
-                            }}
-                            className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            <div>
-                                <span className="font-semibold text-gray-800 block"> Reducir horas estimadas</span>
-                                <span className="text-xs text-gray-500">Ajustar el tiempo que le dedicarás hoy.</span>
-                            </div>
-                            <span className="text-gray-400">→</span>
-                        </button>
-
-                        {/* Opción 3: Posponer */}
-                        <button
-                            onClick={() => {
-                                // Lógica para posponer
-                                console.log("Acción: Posponer");
-                            }}
-                            className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            <div>
-                                <span className="font-semibold text-gray-800 block">Posponer para después</span>
-                                <span className="text-xs text-gray-500">Quitarle la fecha y dejarla en estado postergado.</span>
-                            </div>
-                            <span className="text-gray-400">→</span>
-                        </button>
-                    </div>
-
-                    {/* Botón Cancelar */}
-                    <div className="flex justify-end mt-4">
                         <button
                             onClick={() => setConflictModal({ isOpen: false, subtask: null, conflictData: null })}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                            className="bg-[#3b82f6] text-white px-6 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-blue-600 transition-colors shadow-sm"
                         >
                             Cancelar
                         </button>
