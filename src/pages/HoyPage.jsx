@@ -51,6 +51,11 @@ const HoyPage = () => {
     const [statusFilter, setStatusFilter] = useState('Todos');
     const [daysFilter, setDaysFilter] = useState('');
 
+    const [conflictModal, setConflictModal] = useState({
+        isOpen: false,
+        subtask: null, // La subtarea que causó el problema
+        conflictData: null // El objeto de error que mande el backend
+    });
 
     // Cargar lista de cursos para el dropdown
     useEffect(() => {
@@ -111,6 +116,8 @@ const HoyPage = () => {
         setIsRescheduling(true);
         try {
             await updateSubtask(rescheduleModal.subtask.id, { target_date: rescheduleModal.newDate });
+
+            // Si todo sale bien
             setAlertModal({
                 isOpen: true,
                 type: 'success',
@@ -119,13 +126,72 @@ const HoyPage = () => {
             });
             handleCloseReschedule();
             reload();
+
         } catch (error) {
+            let errorMessage = 'Ha ocurrido un error reprogramando la subtarea.';
+            let isOverloadConflict = false;
+            let conflictMessage = "";
+
+            if (error.response?.data) {
+                const data = error.response.data;
+
+                // El backend puede mandar el error envuelto o en la raíz
+                if (data.overload_conflict) {
+                    isOverloadConflict = true;
+                    conflictMessage = data.overload_conflict.message || JSON.stringify(data.overload_conflict);
+                } else if (data.limit_hours !== undefined || data.exceeds_by !== undefined) {
+                    isOverloadConflict = true;
+                    conflictMessage = data.message || JSON.stringify(data);
+                }
+
+                if (data.detail) {
+                    errorMessage = typeof data.detail === 'string' ? data.detail : data.detail[0];
+                } else if (data.message) {
+                    errorMessage = typeof data.message === 'string' ? data.message : data.message[0];
+                } else if (data.error) {
+                    errorMessage = typeof data.error === 'string' ? data.error : data.error[0];
+                } else if (data.target_date) {
+                    errorMessage = data.target_date[0];
+                } else if (data.non_field_errors) {
+                    errorMessage = data.non_field_errors[0];
+                }
+
+                if (!isOverloadConflict) {
+                    const lowerError = errorMessage.toLowerCase();
+                    if (lowerError.includes("6 horas") ||
+                        lowerError.includes("horas e intentas") ||
+                        lowerError.includes("quedarías con") ||
+                        lowerError.includes("límite") ||
+                        lowerError.includes("planificadas")
+                    ) {
+                        isOverloadConflict = true;
+                        conflictMessage = errorMessage;
+                    }
+                }
+
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            if (isOverloadConflict) {
+                handleCloseReschedule();
+
+                setConflictModal({
+                    isOpen: true,
+                    subtask: rescheduleModal.subtask,
+                    conflictData: { message: conflictMessage || errorMessage }
+                });
+                return;
+            }
+
             setAlertModal({
                 isOpen: true,
                 type: 'error',
                 title: 'Error al actualizar',
-                message: 'Ha ocurrido un error reprogramando la subtarea.'
+                message: errorMessage
             });
+            handleCloseReschedule();
+
         } finally {
             setIsRescheduling(false);
         }
@@ -349,6 +415,89 @@ const HoyPage = () => {
         </>
     );
 
+    const renderConflictModal = () => (
+        <Modal
+            isOpen={conflictModal.isOpen}
+            onClose={() => setConflictModal({ isOpen: false, subtask: null, conflictData: null })}
+            title="¡Sobrecarga Detectada!"
+        >
+            {conflictModal.conflictData && (
+                <div className="flex flex-col gap-4 text-gray-700">
+                    {/* Mensaje de advertencia */}
+                    <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-md">
+                        <p className="text-orange-700 font-medium">
+                            {conflictModal.conflictData.message}
+                        </p>
+                        <p className="text-sm text-orange-600 mt-1">
+                            Intentar realizar esta tarea superará tu límite diario. ¿Qué deseas hacer?
+                        </p>
+                    </div>
+
+                    {/* Opciones */}
+                    <div className="flex flex-col gap-3 mt-2">
+
+                        {/* Opción 1: Mover */}
+                        <button
+                            onClick={() => {
+                                // Cierra este modal y abre el de elegir fecha de nuevo
+                                const subtask = conflictModal.subtask;
+                                setConflictModal({ isOpen: false, subtask: null, conflictData: null });
+                                handleOpenReschedule(subtask);
+                            }}
+                            className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            <div>
+                                <span className="font-semibold text-gray-800 block">Elegir otra fecha</span>
+                                <span className="text-xs text-gray-500">Mover la tarea a un día con menos carga.</span>
+                            </div>
+                            <span className="text-gray-400">→</span>
+                        </button>
+
+                        {/* Opción 2: Reducir */}
+                        <button
+                            onClick={() => {
+                                // Lógica para reducir horas
+                                console.log("Acción: Reducir horas");
+                            }}
+                            className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            <div>
+                                <span className="font-semibold text-gray-800 block"> Reducir horas estimadas</span>
+                                <span className="text-xs text-gray-500">Ajustar el tiempo que le dedicarás hoy.</span>
+                            </div>
+                            <span className="text-gray-400">→</span>
+                        </button>
+
+                        {/* Opción 3: Posponer */}
+                        <button
+                            onClick={() => {
+                                // Lógica para posponer
+                                console.log("Acción: Posponer");
+                            }}
+                            className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            <div>
+                                <span className="font-semibold text-gray-800 block">Posponer para después</span>
+                                <span className="text-xs text-gray-500">Quitarle la fecha y dejarla en estado postergado.</span>
+                            </div>
+                            <span className="text-gray-400">→</span>
+                        </button>
+                    </div>
+
+                    {/* Botón Cancelar */}
+                    <div className="flex justify-end mt-4">
+                        <button
+                            onClick={() => setConflictModal({ isOpen: false, subtask: null, conflictData: null })}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            )}
+        </Modal>
+    );
+
     return (
         <div className="p-8 w-full min-h-screen bg-[#F8FAFC]">
             {renderHeader()}
@@ -401,6 +550,7 @@ const HoyPage = () => {
                 </div>
             )}
             {renderModals()}
+            {renderConflictModal()}
         </div>
     );
 };
