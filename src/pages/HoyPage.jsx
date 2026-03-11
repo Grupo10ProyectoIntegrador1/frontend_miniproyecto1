@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useTodaySubtasks } from '../hooks/useTodaySubtasks';
 import { getActivities } from '../services/activityService';
-import { UserCircle, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee } from 'lucide-react';
+import { updateSubtask } from '../services/subtaskService';
+import { getLocalTodayStr } from '../utils/dateUtils';
+import Modal from '../components/Modal';
+import { UserCircle, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -47,6 +51,7 @@ const HoyPage = () => {
     const [statusFilter, setStatusFilter] = useState('Todos');
     const [daysFilter, setDaysFilter] = useState('');
 
+
     // Cargar lista de cursos para el dropdown
     useEffect(() => {
         getActivities()
@@ -73,6 +78,59 @@ const HoyPage = () => {
     };
 
     const hasActiveFilters = courseFilter !== 'Todos' || statusFilter !== 'Todos' || daysFilter !== '';
+
+
+    const [rescheduleModal, setRescheduleModal] = useState({
+        isOpen: false,
+        subtask: null,
+        newDate: ''
+    });
+    const [isRescheduling, setIsRescheduling] = useState(false);
+    const [alertModal, setAlertModal] = useState({
+        isOpen: false,
+        type: 'success', // 'success' o 'error'
+        title: '',
+        message: ''
+    });
+
+    const handleOpenReschedule = (subtask) => {
+        setRescheduleModal({
+            isOpen: true,
+            subtask: subtask,
+            newDate: subtask.target_date || ''
+        });
+    };
+
+    const handleCloseReschedule = () => {
+        setRescheduleModal({ isOpen: false, subtask: null, newDate: '' });
+    };
+
+    const handleRescheduleConfirm = async () => {
+        if (!rescheduleModal.subtask || !rescheduleModal.newDate) return;
+
+        setIsRescheduling(true);
+        try {
+            await updateSubtask(rescheduleModal.subtask.id, { target_date: rescheduleModal.newDate });
+            setAlertModal({
+                isOpen: true,
+                type: 'success',
+                title: 'Reprogramar',
+                message: 'La fecha de la subtarea se actualizó correctamente.'
+            });
+            handleCloseReschedule();
+            reload();
+        } catch (error) {
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                title: 'Error al actualizar',
+                message: 'Ha ocurrido un error reprogramando la subtarea.'
+            });
+        } finally {
+            setIsRescheduling(false);
+        }
+    };
+
 
     const renderHeader = () => (
         <div className="flex justify-between items-start mb-8 pb-0">
@@ -193,7 +251,10 @@ const HoyPage = () => {
                     <button title="Posponer" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
                         <Clock size={18} />
                     </button>
-                    <button title="Reprogramar" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                    <button
+                        onClick={() => handleOpenReschedule(subtask)}
+                        title="Reprogramar"
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
                         <CalendarClock size={18} />
                     </button>
                 </div>
@@ -250,6 +311,44 @@ const HoyPage = () => {
         </div>
     );
 
+    const renderModals = () => (
+        <>
+            {/* Modal Reprogramar */}
+            <Modal
+                isOpen={rescheduleModal.isOpen}
+                onClose={handleCloseReschedule}
+                onConfirm={handleRescheduleConfirm}
+                title="Reprogramar"
+                confirmText="Reprogramar"
+                showCancel={true}
+                isLoading={isRescheduling}
+            >
+                <div className="py-2">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-zinc-700">Elige una nueva fecha</label>
+                        <input
+                            type="date"
+                            value={rescheduleModal.newDate}
+                            onChange={(e) => setRescheduleModal({ ...rescheduleModal, newDate: e.target.value })}
+                            className="w-full border border-zinc-300 rounded-lg px-4 py-3 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500"
+                        />
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal Alerta */}
+            <Modal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal({ isOpen: false, type: 'success', title: '', message: '' })}
+                onConfirm={() => setAlertModal({ isOpen: false, type: 'success', title: '', message: '' })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+                confirmText="Aceptar"
+            />
+        </>
+    );
+
     return (
         <div className="p-8 w-full min-h-screen bg-[#F8FAFC]">
             {renderHeader()}
@@ -301,6 +400,7 @@ const HoyPage = () => {
                     </button>
                 </div>
             )}
+            {renderModals()}
         </div>
     );
 };

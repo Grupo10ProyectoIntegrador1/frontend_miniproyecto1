@@ -5,10 +5,14 @@ const Modal = ({
     onClose,
     title,
     message,
+    children,
     type = 'success', // 'warning', 'error', 'success'
     onConfirm,
     confirmText,
-    cancelText = 'Cancelar'
+    cancelText = 'Cancelar',
+    showCancel = false,
+    isLoading = false,
+    size = 'md'
 }) => {
     if (!isOpen) return null;
 
@@ -18,17 +22,30 @@ const Modal = ({
     const defaultConfirmText = isWarning ? 'Eliminar' : isError ? 'Cerrar' : 'Aceptar';
     const finalConfirmText = confirmText || defaultConfirmText;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">{title}</h2>
-                <p className="text-gray-500 text-sm mb-6 leading-relaxed">{message}</p>
+    const shouldShowCancel = isWarning || showCancel;
 
-                <div className="flex justify-end gap-3">
-                    {isWarning && (
+    const maxWidthClass = {
+        sm: 'max-w-sm',
+        md: 'max-w-md',
+        lg: 'max-w-lg'
+    }[size] || 'max-w-md';
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div className={`bg-white rounded-2xl shadow-sm w-full ${maxWidthClass} p-6 transform transition-all`}>
+                <h2 className="text-xl font-bold text-slate-800 mb-2">{title}</h2>
+
+                {/* Si hay mensaje de texto, lo mostramos */}
+                {message && <p className="text-gray-500 text-sm mb-6 leading-relaxed">{message}</p>}
+
+                {children && <div className="mb-6">{children}</div>}
+
+                <div className="flex justify-end gap-3 mt-2">
+                    {shouldShowCancel && (
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 font-medium rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                            disabled={isLoading}
+                            className="px-4 py-2 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 font-medium rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-50"
                         >
                             {cancelText}
                         </button>
@@ -36,12 +53,14 @@ const Modal = ({
 
                     <button
                         onClick={onConfirm || onClose}
-                        className={`px-4 py-2 font-medium rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm ${isError || isWarning
+                        disabled={isLoading}
+                        className={`px-4 py-2 font-medium rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed 
+                            ${isError || isWarning
                                 ? 'bg-[#E53E3E] hover:bg-red-700 text-white focus:ring-red-500' // Using a slightly softer red like the image or standard tailwind red-600
                                 : 'bg-[#1D4ED8] hover:bg-blue-800 text-white focus:ring-blue-600' // standard tailwind blue-700
                             }`}
                     >
-                        {finalConfirmText}
+                        {isLoading ? 'Guardando...' : finalConfirmText}
                     </button>
                 </div>
             </div>
