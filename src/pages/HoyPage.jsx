@@ -3,6 +3,7 @@ import { useTodaySubtasks } from '../hooks/useTodaySubtasks';
 import { getActivities } from '../services/activityService';
 import { updateSubtask } from '../services/subtaskService';
 import { getLocalTodayStr } from '../utils/dateUtils';
+import { parseOverloadError } from '../utils/errorUtils';
 import Modal from '../components/Modal';
 import { UserCircle, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -98,6 +99,14 @@ const HoyPage = () => {
         message: ''
     });
 
+    const [reduceModal, setReduceModal] = useState({
+        isOpen: false,
+        subtask: null,
+        newDate: '',
+        newHours: 0
+    });
+    const [isReducing, setIsReducing] = useState(false);
+
     const handleOpenReschedule = (subtask) => {
         setRescheduleModal({
             isOpen: true,
@@ -128,50 +137,7 @@ const HoyPage = () => {
             reload();
 
         } catch (error) {
-            let errorMessage = 'Ha ocurrido un error reprogramando la subtarea.';
-            let isOverloadConflict = false;
-            let conflictMessage = "";
-
-            if (error.response?.data) {
-                const data = error.response.data;
-
-                // El backend puede mandar el error envuelto o en la raíz
-                if (data.overload_conflict) {
-                    isOverloadConflict = true;
-                    conflictMessage = data.overload_conflict.message || JSON.stringify(data.overload_conflict);
-                } else if (data.limit_hours !== undefined || data.exceeds_by !== undefined) {
-                    isOverloadConflict = true;
-                    conflictMessage = data.message || JSON.stringify(data);
-                }
-
-                if (data.detail) {
-                    errorMessage = typeof data.detail === 'string' ? data.detail : data.detail[0];
-                } else if (data.message) {
-                    errorMessage = typeof data.message === 'string' ? data.message : data.message[0];
-                } else if (data.error) {
-                    errorMessage = typeof data.error === 'string' ? data.error : data.error[0];
-                } else if (data.target_date) {
-                    errorMessage = data.target_date[0];
-                } else if (data.non_field_errors) {
-                    errorMessage = data.non_field_errors[0];
-                }
-
-                if (!isOverloadConflict) {
-                    const lowerError = errorMessage.toLowerCase();
-                    if (lowerError.includes("6 horas") ||
-                        lowerError.includes("horas e intentas") ||
-                        lowerError.includes("quedarías con") ||
-                        lowerError.includes("límite") ||
-                        lowerError.includes("planificadas")
-                    ) {
-                        isOverloadConflict = true;
-                        conflictMessage = errorMessage;
-                    }
-                }
-
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
+            const { isOverloadConflict, conflictMessage, errorMessage } = parseOverloadError(error, 'Ha ocurrido un error reprogramando la subtarea.');
 
             if (isOverloadConflict) {
                 handleCloseReschedule();
@@ -179,7 +145,7 @@ const HoyPage = () => {
                 setConflictModal({
                     isOpen: true,
                     subtask: rescheduleModal.subtask,
-                    conflictData: { message: conflictMessage || errorMessage }
+                    conflictData: { message: conflictMessage || errorMessage, attemptedDate: rescheduleModal.newDate }
                 });
                 return;
             }
@@ -194,6 +160,59 @@ const HoyPage = () => {
 
         } finally {
             setIsRescheduling(false);
+        }
+    };
+
+    const handleOpenReduce = (subtask, newDate) => {
+        setReduceModal({
+            isOpen: true,
+            subtask: subtask,
+            newDate: newDate,
+            newHours: subtask.estimated_hours || 1
+        });
+    };
+
+    const handleCloseReduce = () => {
+        setReduceModal({ isOpen: false, subtask: null, newDate: '', newHours: 0 });
+    };
+
+    const handleReduceConfirm = async () => {
+        if (!reduceModal.subtask || !reduceModal.newDate || reduceModal.newHours <= 0) return;
+
+        setIsReducing(true);
+        try {
+            await updateSubtask(reduceModal.subtask.id, {
+                target_date: reduceModal.newDate,
+                estimated_hours: reduceModal.newHours
+            });
+
+            // Éxito: solo cerramos y recargamos para no saturar de modales
+            handleCloseReduce();
+            reload();
+
+        } catch (error) {
+            const { isOverloadConflict, conflictMessage, errorMessage } = parseOverloadError(error, 'Ha ocurrido un error al actualizar las horas.');
+
+            if (isOverloadConflict) {
+                handleCloseReduce();
+                setConflictModal({
+                    isOpen: true,
+                    subtask: reduceModal.subtask,
+                    conflictData: { message: conflictMessage || errorMessage, attemptedDate: reduceModal.newDate }
+                });
+                return;
+            }
+
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                title: 'Error al actualizar',
+                message: errorMessage
+            });
+            handleCloseReduce();
+
+        } finally {
+            setIsReducing(false);
         }
     };
 
@@ -456,8 +475,14 @@ const HoyPage = () => {
                         {/* Opción 2: Reducir */}
                         <button
                             onClick={() => {
-                                // Lógica para reducir horas
-                                console.log("Acción: Reducir horas");
+                                // Cierra este modal y abre el de reducir horas
+                                const subtask = conflictModal.subtask;
+                                // Para reducir, usamos la fecha que estábamos intentando asignar (que causó el conflicto).
+                                // La guardamos adicionalmente en conflictData.attemptedDate, o usamos la nueva del rescheduleModal
+                                const targetDate = conflictModal.conflictData.attemptedDate || rescheduleModal.newDate || subtask.target_date;
+
+                                setConflictModal({ isOpen: false, subtask: null, conflictData: null });
+                                handleOpenReduce(subtask, targetDate);
                             }}
                             className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                         >
@@ -495,6 +520,37 @@ const HoyPage = () => {
                     </div>
                 </div>
             )}
+        </Modal>
+    );
+
+    const renderReduceModal = () => (
+        <Modal
+            isOpen={reduceModal.isOpen}
+            onClose={handleCloseReduce}
+            onConfirm={handleReduceConfirm}
+            title="Reducir horas estimadas"
+            confirmText="Guardar"
+            showCancel={true}
+            isLoading={isReducing}
+        >
+            <div className="py-2">
+                <div className="space-y-4">
+                    <p className="text-sm text-zinc-600">
+                        Ajusta el tiempo que le dedicarás a esta tarea el <b>{formatDateShort(reduceModal.newDate)}</b> para no exceder tu límite.
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-bold text-zinc-700">Nuevas horas estimadas</label>
+                        <input
+                            type="number"
+                            min="0.5"
+                            step="0.5"
+                            value={reduceModal.newHours}
+                            onChange={(e) => setReduceModal({ ...reduceModal, newHours: parseFloat(e.target.value) || '' })}
+                            className="w-full border border-zinc-300 rounded-lg px-4 py-3 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500"
+                        />
+                    </div>
+                </div>
+            </div>
         </Modal>
     );
 
@@ -551,6 +607,7 @@ const HoyPage = () => {
             )}
             {renderModals()}
             {renderConflictModal()}
+            {renderReduceModal()}
         </div>
     );
 };
