@@ -3,6 +3,7 @@ import { Plus, Calendar, ListTodo, BarChart2, LogIn, LogOut, Loader2, User, Chev
 import { useAuth } from "../../context/useAuth";
 import { useState } from "react";
 import logo from '../../assets/bb51bc4eb2882c49a664ff7c04a240151df066fc.png';
+import CapacitySettings from "./CapacitySettings";
 
 const navItems = [
     { to: '/crear', label: 'Crear Actividad', icon: Calendar },
@@ -89,47 +90,51 @@ function Sidebar({ isExpanded, setIsExpanded }) {
 
             {/* Acciones de cuenta al fondo */}
             {isAuthenticated ? (
-                <div className={`mt-auto border-t border-slate-700/50 pt-6 flex items-center ${isExpanded ? 'px-2 justify-between' : 'flex-col justify-center gap-4'}`}>
-                    {isExpanded ? (
-                        <>
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0">
+                <div className={`mt-auto border-t border-slate-700/50 pt-6 flex flex-col ${isExpanded ? 'px-2' : 'items-center gap-4'}`}>
+                    <div className={`flex items-center ${isExpanded ? 'justify-between' : 'justify-center w-full'} mb-4`}>
+                        {isExpanded ? (
+                            <>
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0">
+                                        <User size={20} />
+                                    </div>
+                                    <span className="text-[15px] font-medium text-slate-300 truncate">Estudiante</span>
+                                </div>
+                                {isLoggingOut ? (
+                                    <Loader2 size={20} className="animate-spin text-slate-400 flex-shrink-0" />
+                                ) : (
+                                    <button
+                                        onClick={handleLogout}
+                                        disabled={isLoggingOut}
+                                        className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex-shrink-0"
+                                        title="Cerrar sesión"
+                                    >
+                                        <LogOut size={20} />
+                                    </button>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0" title="Perfil de Estudiante">
                                     <User size={20} />
                                 </div>
-                                <span className="text-[15px] font-medium text-slate-300 truncate">Estudiante</span>
-                            </div>
-                            {isLoggingOut ? (
-                                <Loader2 size={20} className="animate-spin text-slate-400 flex-shrink-0" />
-                            ) : (
-                                <button
-                                    onClick={handleLogout}
-                                    disabled={isLoggingOut}
-                                    className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex-shrink-0"
-                                    title="Cerrar sesión"
-                                >
-                                    <LogOut size={20} />
-                                </button>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0" title="Perfil de Estudiante">
-                                <User size={20} />
-                            </div>
-                            {isLoggingOut ? (
-                                <Loader2 size={20} className="animate-spin text-slate-400" />
-                            ) : (
-                                <button
-                                    onClick={handleLogout}
-                                    disabled={isLoggingOut}
-                                    className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50"
-                                    title="Cerrar sesión"
-                                >
-                                    <LogOut size={20} />
-                                </button>
-                            )}
-                        </>
-                    )}
+                                {isLoggingOut ? (
+                                    <Loader2 size={20} className="animate-spin text-slate-400" />
+                                ) : (
+                                    <button
+                                        onClick={handleLogout}
+                                        disabled={isLoggingOut}
+                                        className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 mt-4"
+                                        title="Cerrar sesión"
+                                    >
+                                        <LogOut size={20} />
+                                    </button>
+                                )}
+                            </>
+                        )}
+                    </div>
+                    {/* Componente de Configuración de Capacidad */}
+                    <CapacitySettings isExpanded={isExpanded} />
                 </div>
             ) : (
                 <div className="mt-auto border-t border-slate-700/50 pt-6 px-2 flex justify-center">
