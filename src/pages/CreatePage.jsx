@@ -99,7 +99,21 @@ function CreatePage() {
     } catch (err) {
       // Intenta mostrar el mensaje específico que manda Django
       const data = err.response?.data
-      if (data?.errors) {
+      if (err.response?.status === 409) {
+        // Parse the error message to get the date: "La fecha YYYY-MM-DD quedaría con..."
+        const match = data?.message?.match(/La fecha (\d{4}-\d{2}-\d{2})/)
+        if (match) {
+          const conflictDate = match[1]
+          const conflictSubtask = subtasks.find(s => s.target_date === conflictDate)
+          if (conflictSubtask) {
+            setServerError(`Reduce el número de horas o cambia la fecha sugerida de la subtarea "${conflictSubtask.title}" para poder crear la actividad.`)
+          } else {
+             setServerError('Reduce el número de horas o cambia las fechas de las subtareas para poder crear la actividad.')
+          }
+        } else {
+           setServerError('Reduce el número de horas o cambia las fechas de las subtareas para poder crear la actividad.')
+        }
+      } else if (data?.errors) {
         // El backend mandó errores por campo, los mapeamos
         setFieldErrors(data.errors)
       } else {
