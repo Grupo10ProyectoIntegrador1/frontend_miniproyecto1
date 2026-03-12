@@ -258,7 +258,7 @@ function ActivityDetailPage() {
   }
 
   return (
-    <div className="w-full mx-auto">
+    <div className="w-full mx-auto p-8">
 
       {/* Volver */}
       <button

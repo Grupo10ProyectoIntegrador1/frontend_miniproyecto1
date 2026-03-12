@@ -90,8 +90,8 @@ function Sidebar({ isExpanded, setIsExpanded }) {
 
             {/* Acciones de cuenta al fondo */}
             {isAuthenticated ? (
-                <div className={`mt-auto border-t border-slate-700/50 pt-6 flex flex-col ${isExpanded ? 'px-2' : 'items-center gap-4'}`}>
-                    <div className={`flex items-center ${isExpanded ? 'justify-between' : 'justify-center w-full'} mb-4`}>
+                <div className={`mt-auto border-t border-slate-700/50 pt-6 flex flex-col ${isExpanded ? 'px-2' : 'px-2 items-center gap-4 pb-6'}`}>
+                    <div className={`flex items-center ${isExpanded ? 'justify-between' : 'justify-center w-full'} mb-2`}>
                         {isExpanded ? (
                             <>
                                 <div className="flex items-center gap-3 overflow-hidden">
@@ -115,24 +115,30 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                             </>
                         ) : (
                             <>
-                                <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0" title="Perfil de Estudiante">
+                                <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0 mb-2" title="Perfil de Estudiante">
                                     <User size={20} />
                                 </div>
-                                {isLoggingOut ? (
-                                    <Loader2 size={20} className="animate-spin text-slate-400" />
-                                ) : (
-                                    <button
-                                        onClick={handleLogout}
-                                        disabled={isLoggingOut}
-                                        className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 mt-4"
-                                        title="Cerrar sesión"
-                                    >
-                                        <LogOut size={20} />
-                                    </button>
-                                )}
                             </>
                         )}
                     </div>
+
+                    {!isExpanded && (
+                        <>
+                            {isLoggingOut ? (
+                                <Loader2 size={20} className="animate-spin text-slate-400 mb-2" />
+                            ) : (
+                                <button
+                                    onClick={handleLogout}
+                                    disabled={isLoggingOut}
+                                    className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 mb-2"
+                                    title="Cerrar sesión"
+                                >
+                                    <LogOut size={20} />
+                                </button>
+                            )}
+                        </>
+                    )}
+
                     {/* Componente de Configuración de Capacidad */}
                     <CapacitySettings isExpanded={isExpanded} />
                 </div>
