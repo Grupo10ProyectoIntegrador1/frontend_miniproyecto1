@@ -6,8 +6,6 @@ const todayStr = getLocalTodayStr()
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
   { value: 'done', label: 'Completada' },
-  { value: 'postponed', label: 'Postergada' },
-  { value: 'overdue', label: 'Vencida' },
 ]
 
 const EMPTY_FORM = {
