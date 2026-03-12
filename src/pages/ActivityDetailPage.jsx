@@ -7,6 +7,7 @@ import { updateActivity, deleteActivity } from '../services/activityService'
 import SubtaskCard from '../components/activities/SubtaskCard'
 import SubtaskForm from '../components/activities/SubtaskForm'
 import Modal from '../components/Modal'
+import { parseOverloadError } from '../utils/errorUtils'
 
 const ACTIVITY_TYPES_MAP = {
   exam: 'Examen',
@@ -173,8 +174,8 @@ function ActivityDetailPage() {
   }
 
   const handleAddSubtask = async (data) => {
-    const ok = await addSubtask(data)
-    if (ok) {
+    const result = await addSubtask(data)
+    if (result === true) {
       setShowForm(false)
       setModalConfig({
         isOpen: true,
@@ -183,6 +184,25 @@ function ActivityDetailPage() {
         message: 'La subtarea fue creada correctamente.',
         onConfirm: null,
       })
+    } else if (result?.error && result?.rawError) {
+        const { isOverloadConflict, conflictMessage, errorMessage } = parseOverloadError(result.rawError, 'Ha ocurrido un error al crear la subtarea. Inténtelo de nuevo.')
+        if (isOverloadConflict) {
+            setModalConfig({
+              isOpen: true,
+              type: 'error',
+              title: '¡Cuidado! Límite de capacidad excedido',
+              message: conflictMessage || errorMessage,
+              onConfirm: null,
+            })
+        } else {
+            setModalConfig({
+                isOpen: true,
+                type: 'error',
+                title: 'Error',
+                message: errorMessage,
+                onConfirm: null,
+            })
+        }
     } else {
       setModalConfig({
         isOpen: true,
@@ -195,8 +215,8 @@ function ActivityDetailPage() {
   }
 
   const handleEditSubtask = async (data) => {
-    const ok = await editSubtask(editingSubtask.id, data)
-    if (ok) {
+    const result = await editSubtask(editingSubtask.id, data)
+    if (result === true) {
       setEditingSubtask(null)
       setModalConfig({
         isOpen: true,
@@ -205,6 +225,25 @@ function ActivityDetailPage() {
         message: 'La subtarea fue editada correctamente.',
         onConfirm: null,
       })
+    } else if (result?.error && result?.rawError) {
+        const { isOverloadConflict, conflictMessage, errorMessage } = parseOverloadError(result.rawError, 'Ha ocurrido un error al editar la subtarea. Inténtelo de nuevo.')
+        if (isOverloadConflict) {
+            setModalConfig({
+              isOpen: true,
+              type: 'error',
+              title: '¡Cuidado! Límite de capacidad excedido',
+              message: conflictMessage || errorMessage,
+              onConfirm: null,
+            })
+        } else {
+            setModalConfig({
+                isOpen: true,
+                type: 'error',
+                title: 'Error',
+                message: errorMessage,
+                onConfirm: null,
+            })
+        }
     } else {
       setModalConfig({
         isOpen: true,
