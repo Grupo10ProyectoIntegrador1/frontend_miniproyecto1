@@ -1,0 +1,62 @@
+export const parseOverloadError = (error, defaultMessage = 'Ha ocurrido un error al actualizar.') => {
+    let errorMessage = defaultMessage;
+    let isOverloadConflict = false;
+    let conflictMessage = "";
+    let conflictPayload = null;
+
+    if (error.response?.data) {
+        const data = error.response.data;
+
+        // El backend puede mandar el error envuelto o en la raíz
+        if (data.overload_conflict) {
+            isOverloadConflict = true;
+            conflictMessage = data.overload_conflict.message || JSON.stringify(data.overload_conflict);
+            conflictPayload = data.overload_conflict;
+        } else if (data.limit_hours !== undefined || data.exceeds_by !== undefined) {
+            isOverloadConflict = true;
+            conflictMessage = data.message || JSON.stringify(data);
+            conflictPayload = data;
+        }
+
+        if (data.errors && typeof data.errors === 'object' && Object.keys(data.errors).length > 0) {
+            const firstKey = Object.keys(data.errors)[0];
+            const firstError = data.errors[firstKey];
+            errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+        } else if (data.detail) {
+            errorMessage = typeof data.detail === 'string' ? data.detail : data.detail[0];
+        } else if (data.message && data.message !== 'Error de validación') {
+            errorMessage = typeof data.message === 'string' ? data.message : data.message[0];
+        } else if (data.error) {
+            errorMessage = typeof data.error === 'string' ? data.error : data.error[0];
+        } else if (data.target_date) {
+            errorMessage = data.target_date[0];
+        } else if (data.non_field_errors) {
+            errorMessage = data.non_field_errors[0];
+        } else if (data.message) {
+            // Fallback for "Error de validación" si no hay otro error específico
+            errorMessage = typeof data.message === 'string' ? data.message : data.message[0];
+        }
+
+        if (!isOverloadConflict) {
+            const lowerError = errorMessage.toLowerCase();
+            if (lowerError.includes("6 horas") ||
+                lowerError.includes("horas e intentas") ||
+                lowerError.includes("quedarías con") ||
+                lowerError.includes("(límite") ||
+                lowerError.includes("planificadas")
+            ) {
+                isOverloadConflict = true;
+                conflictMessage = errorMessage;
+            }
+        }
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+
+    return {
+        isOverloadConflict,
+        conflictMessage,
+        errorMessage,
+        conflictPayload
+    };
+};

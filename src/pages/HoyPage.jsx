@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTodaySubtasks } from '../hooks/useTodaySubtasks';
 import { getActivities } from '../services/activityService';
-import { UserCircle, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, RotateCcw, Loader2, Coffee } from 'lucide-react';
+import { updateSubtask } from '../services/subtaskService';
+import { getLocalTodayStr } from '../utils/dateUtils';
+import { parseOverloadError } from '../utils/errorUtils';
+import Modal from '../components/Modal';
+import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -21,10 +26,10 @@ const STATUS_TO_API = {
 };
 
 const STATUS_BADGE = {
-    'pending':   { text: 'Pendiente',  className: 'bg-zinc-200 text-zinc-600' },
-    'done':      { text: 'Completada', className: 'bg-green-100 text-green-700' },
+    'pending': { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' },
+    'done': { text: 'Completada', className: 'bg-green-100 text-green-700' },
     'postponed': { text: 'Postergada', className: 'bg-yellow-100 text-yellow-700' },
-    'overdue':   { text: 'Vencida',    className: 'bg-red-600 text-white' },
+    'overdue': { text: 'Vencida', className: 'bg-red-600 text-white' },
 };
 
 const formatDateShort = (dateStr) => {
@@ -47,6 +52,12 @@ const HoyPage = () => {
     const [statusFilter, setStatusFilter] = useState('Todos');
     const [daysFilter, setDaysFilter] = useState('');
 
+    const [conflictModal, setConflictModal] = useState({
+        isOpen: false,
+        subtask: null, // La subtarea que causó el problema
+        conflictData: null // El objeto de error que mande el backend
+    });
+
     // Cargar lista de cursos para el dropdown
     useEffect(() => {
         getActivities()
@@ -54,7 +65,7 @@ const HoyPage = () => {
                 const unique = [...new Set(activities.map(a => a.course).filter(Boolean))];
                 setCourses(['Todos', ...unique]);
             })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     const handleCourseChange = (value) => {
@@ -73,6 +84,146 @@ const HoyPage = () => {
     };
 
     const hasActiveFilters = courseFilter !== 'Todos' || statusFilter !== 'Todos' || daysFilter !== '';
+
+
+    const [rescheduleModal, setRescheduleModal] = useState({
+        isOpen: false,
+        subtask: null,
+        newDate: ''
+    });
+    const [isRescheduling, setIsRescheduling] = useState(false);
+    const [alertModal, setAlertModal] = useState({
+        isOpen: false,
+        type: 'success', // 'success' o 'error'
+        title: '',
+        message: ''
+    });
+
+    const [reduceModal, setReduceModal] = useState({
+        isOpen: false,
+        subtask: null,
+        newDate: '',
+        newHours: 0
+    });
+    const [isReducing, setIsReducing] = useState(false);
+
+    const handleOpenReschedule = (subtask) => {
+        setRescheduleModal({
+            isOpen: true,
+            subtask: subtask,
+            newDate: subtask.target_date || ''
+        });
+    };
+
+    const handleCloseReschedule = () => {
+        setRescheduleModal({ isOpen: false, subtask: null, newDate: '' });
+    };
+
+    const handleRescheduleConfirm = async () => {
+        if (!rescheduleModal.subtask || !rescheduleModal.newDate) return;
+
+        setIsRescheduling(true);
+        try {
+            await updateSubtask(rescheduleModal.subtask.id, {
+                target_date: rescheduleModal.newDate,
+                status: 'postponed'
+            });
+
+            // Si todo sale bien
+            setAlertModal({
+                isOpen: true,
+                type: 'success',
+                title: 'Reprogramar',
+                message: 'La fecha de la subtarea se actualizó correctamente.'
+            });
+            handleCloseReschedule();
+            reload();
+
+        } catch (error) {
+            const { isOverloadConflict, conflictMessage, errorMessage, conflictPayload } = parseOverloadError(error, 'Ha ocurrido un error reprogramando la subtarea.');
+
+            if (isOverloadConflict) {
+                handleCloseReschedule();
+
+                setConflictModal({
+                    isOpen: true,
+                    subtask: rescheduleModal.subtask,
+                    conflictData: { message: conflictMessage || errorMessage, attemptedDate: rescheduleModal.newDate, payload: conflictPayload }
+                });
+                return;
+            }
+
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                title: 'Error al actualizar',
+                message: errorMessage
+            });
+            handleCloseReschedule();
+
+        } finally {
+            setIsRescheduling(false);
+        }
+    };
+
+    const handleOpenReduce = (subtask, newDate) => {
+        setReduceModal({
+            isOpen: true,
+            subtask: subtask,
+            newDate: newDate,
+            newHours: subtask.estimated_hours || 1
+        });
+    };
+
+    const handleCloseReduce = () => {
+        setReduceModal({ isOpen: false, subtask: null, newDate: '', newHours: 0 });
+    };
+
+    const handleReduceConfirm = async () => {
+        if (!reduceModal.subtask || !reduceModal.newDate || reduceModal.newHours <= 0) return;
+
+        setIsReducing(true);
+        try {
+            await updateSubtask(reduceModal.subtask.id, {
+                target_date: reduceModal.newDate,
+                estimated_hours: reduceModal.newHours,
+                status: 'postponed'
+            });
+
+            setAlertModal({
+                isOpen: true,
+                type: 'success',
+                title: 'Horas reducidas',
+                message: 'La fecha y las horas de la subtarea se actualizaron correctamente.'
+            });
+            handleCloseReduce();
+            reload();
+
+        } catch (error) {
+            const { isOverloadConflict, conflictMessage, errorMessage, conflictPayload } = parseOverloadError(error, 'Ha ocurrido un error al actualizar las horas.');
+
+            if (isOverloadConflict) {
+                handleCloseReduce();
+                setConflictModal({
+                    isOpen: true,
+                    subtask: reduceModal.subtask,
+                    conflictData: { message: conflictMessage || errorMessage, attemptedDate: reduceModal.newDate, payload: conflictPayload }
+                });
+                return;
+            }
+
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                title: 'Error al actualizar',
+                message: errorMessage
+            });
+            handleCloseReduce();
+
+        } finally {
+            setIsReducing(false);
+        }
+    };
 
     const renderHeader = () => (
         <div className="flex justify-between items-start mb-8 pb-0">
@@ -186,15 +337,18 @@ const HoyPage = () => {
                     )}
                 </div>
 
-                <div className="flex gap-3">
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2 rounded-xl transition-colors">
+                <div className="flex gap-2">
+                    <button className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
                         <CheckCircle2 size={18} /> Hecha
                     </button>
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-bold px-5 py-2 rounded-xl transition-colors">
-                        <Clock size={18} /> Posponer
+                    <button title="Posponer" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                        <Clock size={18} />
                     </button>
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-bold px-5 py-2 rounded-xl transition-colors">
-                        <RotateCcw size={18} /> Reprogramar
+                    <button
+                        onClick={() => handleOpenReschedule(subtask)}
+                        title="Reprogramar"
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                        <CalendarClock size={18} />
                     </button>
                 </div>
             </div>
@@ -202,50 +356,221 @@ const HoyPage = () => {
     };
 
     const renderSuccess = () => (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-row gap-6 overflow-x-auto pb-8 items-start w-full snap-x">
             {overdue.length > 0 && (
-                <section>
-                    <h2 className="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
+                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                    <h2 className="text-xl font-bold text-red-600 mb-5 flex items-center gap-2">
                         Vencidas
                         <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{overdue.length}</span>
                     </h2>
-                    {overdue.map(sub => {
-                        const badge = getBadge(sub, { text: 'Vencida', className: 'bg-red-600 text-white' });
-                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                    })}
+                    <div className="flex flex-col">
+                        {overdue.map(sub => {
+                            const badge = getBadge(sub, { text: 'Vencida', className: 'bg-red-600 text-white' });
+                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                        })}
+                    </div>
                 </section>
             )}
 
             {todayTasks.length > 0 && (
-                <section>
-                    <h2 className="text-xl font-bold text-blue-500 mb-4 flex items-center gap-2">
+                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                    <h2 className="text-xl font-bold text-blue-500 mb-5 flex items-center gap-2">
                         Para hoy
                         <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{todayTasks.length}</span>
                     </h2>
-                    {todayTasks.map(sub => {
-                        const badge = getBadge(sub, { text: 'Para hoy', className: 'bg-blue-500 text-white' });
-                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                    })}
+                    <div className="flex flex-col">
+                        {todayTasks.map(sub => {
+                            const badge = getBadge(sub, { text: 'Para hoy', className: 'bg-blue-500 text-white' });
+                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                        })}
+                    </div>
                 </section>
             )}
 
             {upcoming.length > 0 && (
-                <section className="mb-10">
-                    <h2 className="text-xl font-bold text-zinc-800 mb-4 flex items-center gap-2">
+                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                    <h2 className="text-xl font-bold text-zinc-800 mb-5 flex items-center gap-2">
                         Próximas {daysFilter !== '' ? `(${daysFilter} días)` : ''}
                         <span className="bg-zinc-200 text-zinc-600 text-xs px-2 py-0.5 rounded-full">{upcoming.length}</span>
                     </h2>
-                    {upcoming.map(sub => {
-                        const badge = getBadge(sub, { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' });
-                        return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                    })}
+                    <div className="flex flex-col">
+                        {upcoming.map(sub => {
+                            const badge = getBadge(sub, { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' });
+                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                        })}
+                    </div>
                 </section>
             )}
         </div>
     );
 
+    const renderModals = () => (
+        <>
+            {/* Modal Reprogramar */}
+            <Modal
+                isOpen={rescheduleModal.isOpen}
+                onClose={handleCloseReschedule}
+                onConfirm={handleRescheduleConfirm}
+                title="Reprogramar"
+                confirmText="Reprogramar"
+                showCancel={true}
+                isLoading={isRescheduling}
+            >
+                <div className="py-2">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-zinc-700">Elige una nueva fecha</label>
+                        <input
+                            type="date"
+                            value={rescheduleModal.newDate}
+                            onChange={(e) => setRescheduleModal({ ...rescheduleModal, newDate: e.target.value })}
+                            className="w-full border border-zinc-300 rounded-lg px-4 py-3 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500"
+                        />
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal Alerta */}
+            <Modal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal({ isOpen: false, type: 'success', title: '', message: '' })}
+                onConfirm={() => setAlertModal({ isOpen: false, type: 'success', title: '', message: '' })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+                confirmText="Aceptar"
+            />
+        </>
+    );
+
+    const renderConflictModal = () => {
+        const payload = conflictModal.conflictData?.payload;
+        const alternativeDate = payload?.alternative_dates?.[0];
+        const hoursToReduce = payload?.hours_to_reduce;
+        const subtaskHours = conflictModal.subtask?.estimated_hours || 0;
+
+        let reducedHoursLabel = "Reducir horas estimadas";
+        let reducedHoursValue = subtaskHours;
+
+        if (hoursToReduce > 0 && subtaskHours > hoursToReduce) {
+            reducedHoursValue = subtaskHours - hoursToReduce;
+            reducedHoursLabel = `Reducir a ${reducedHoursValue}h`;
+        } else if (hoursToReduce > 0 && subtaskHours <= hoursToReduce) {
+            // Si la reducción requerida haría que las horas fueran <= 0
+            reducedHoursValue = 0;
+        }
+
+        const formatDateLong = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + "T00:00:00");
+            const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            return `${d.getDate()} de ${months[d.getMonth()]}`;
+        };
+
+        return (
+            <Modal
+                isOpen={conflictModal.isOpen}
+                onClose={() => setConflictModal({ isOpen: false, subtask: null, conflictData: null })}
+                title="Conflicto de sobrecarga"
+                icon={<AlertTriangle size={22} className="text-amber-500" />}
+                hideFooter={true}
+            >
+                {conflictModal.conflictData && (
+                    <div className="flex flex-col">
+                        <p className="text-[#94a3b8] font-medium text-[15px] mb-8">
+                            {conflictModal.conflictData.message}
+                        </p>
+
+                        <p className="text-[#94a3b8] font-medium text-[15px] mb-3">
+                            ¿Cómo deseas resolverlo?
+                        </p>
+
+                        <div className="flex justify-between items-end w-full">
+                            <div className="flex flex-col gap-2.5 items-start">
+                                <button
+                                    onClick={() => {
+                                        const subtask = conflictModal.subtask;
+                                        setConflictModal({ isOpen: false, subtask: null, conflictData: null });
+
+                                        // Update the date picker payload directly if an alternative date exists
+                                        setRescheduleModal({
+                                            isOpen: true,
+                                            subtask: subtask,
+                                            newDate: alternativeDate || subtask.target_date || ''
+                                        });
+                                    }}
+                                    className="flex items-center gap-2 bg-[#3b82f6] text-white px-4 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-blue-600 transition-colors shadow-sm w-full"
+                                >
+                                    <Calendar size={18} strokeWidth={2.5} />
+                                    {alternativeDate ? `Mover al ${formatDateLong(alternativeDate)}` : 'Mover a otro día'}
+                                </button>
+
+                                {reducedHoursValue > 0 && (
+                                    <button
+                                        onClick={() => {
+                                            const subtask = conflictModal.subtask;
+                                            const targetDate = conflictModal.conflictData.attemptedDate || rescheduleModal.newDate || subtask.target_date;
+                                            setConflictModal({ isOpen: false, subtask: null, conflictData: null });
+
+                                            setReduceModal({
+                                                isOpen: true,
+                                                subtask: subtask,
+                                                newDate: targetDate,
+                                                newHours: reducedHoursValue
+                                            });
+                                        }}
+                                        className="flex items-center gap-2 bg-[#8b98a9] text-white px-4 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-[#7b8696] transition-colors shadow-sm w-full"
+                                    >
+                                        <RotateCcw size={18} strokeWidth={2.5} /> {reducedHoursLabel}
+                                    </button>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => setConflictModal({ isOpen: false, subtask: null, conflictData: null })}
+                                className="bg-[#3b82f6] text-white px-6 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-blue-600 transition-colors shadow-sm"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+        );
+    };
+
+    const renderReduceModal = () => (
+        <Modal
+            isOpen={reduceModal.isOpen}
+            onClose={handleCloseReduce}
+            onConfirm={handleReduceConfirm}
+            title="Reducir horas estimadas"
+            confirmText="Guardar"
+            showCancel={true}
+            isLoading={isReducing}
+        >
+            <div className="py-2">
+                <div className="space-y-4">
+                    <p className="text-sm text-zinc-600">
+                        Ajusta el tiempo que le dedicarás a esta tarea el <b>{formatDateShort(reduceModal.newDate)}</b> para no exceder tu límite.
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-bold text-zinc-700">Nuevas horas estimadas</label>
+                        <input
+                            type="number"
+                            min="0.5"
+                            step="0.5"
+                            value={reduceModal.newHours}
+                            onChange={(e) => setReduceModal({ ...reduceModal, newHours: parseFloat(e.target.value) || '' })}
+                            className="w-full border border-zinc-300 rounded-lg px-4 py-3 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500"
+                        />
+                    </div>
+                </div>
+            </div>
+        </Modal>
+    );
+
     return (
-        <div className="p-8 max-w-5xl mx-auto min-h-screen bg-[#F8FAFC]">
+        <div className="p-8 w-full min-h-screen bg-[#F8FAFC]">
             {renderHeader()}
             {renderFilters()}
 
@@ -295,6 +620,9 @@ const HoyPage = () => {
                     </button>
                 </div>
             )}
+            {renderModals()}
+            {renderConflictModal()}
+            {renderReduceModal()}
         </div>
     );
 };

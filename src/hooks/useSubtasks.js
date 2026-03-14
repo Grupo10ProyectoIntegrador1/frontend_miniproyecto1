@@ -21,9 +21,9 @@ export const useSubtasks = (activity) => {
             const response = await createSubtask(activity.id, subtasksData)
             setSubtasks((prev) => [...prev, response.data])
             return true
-        } catch {
+        } catch (err) {
             setError('Error al crear la subtarea.')
-            return false
+            return { error: true, rawError: err }
         } finally {
             setLoading(false)
         }
@@ -39,9 +39,9 @@ export const useSubtasks = (activity) => {
                 prev.map((s) => s.id === id ? response.data : s)
             )
             return true
-        } catch {
+        } catch (err) {
             setError('Error al actualizar la subtarea.')
-            return false
+            return { error: true, rawError: err }
         } finally {
             setLoading(false)
         }

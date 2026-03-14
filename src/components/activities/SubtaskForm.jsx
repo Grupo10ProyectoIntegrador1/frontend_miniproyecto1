@@ -6,8 +6,6 @@ const todayStr = getLocalTodayStr()
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
   { value: 'done', label: 'Completada' },
-  { value: 'postponed', label: 'Postergada' },
-  { value: 'overdue', label: 'Vencida' },
 ]
 
 const EMPTY_FORM = {
@@ -75,10 +73,13 @@ const SubtaskForm = ({ onSubmit, onCancel, loading, initialData, activityDueDate
     // Construye el payload limpio
     const payload = {
       title: form.title.trim(),
-      target_date: form.target_date,
       estimated_hours: parseFloat(form.estimated_hours),
       ...(form.description && { description: form.description.trim() }),
       ...(initialData && { status: form.status }),
+    }
+
+    if (!initialData || form.target_date !== initialData.target_date) {
+      payload.target_date = form.target_date
     }
 
     onSubmit(payload)
