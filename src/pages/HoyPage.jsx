@@ -5,7 +5,7 @@ import { updateSubtask } from '../services/subtaskService';
 import { getLocalTodayStr } from '../utils/dateUtils';
 import { parseOverloadError } from '../utils/errorUtils';
 import Modal from '../components/Modal';
-import { UserCircle, AlertCircle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
+import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 
@@ -471,6 +471,7 @@ const HoyPage = () => {
                 isOpen={conflictModal.isOpen}
                 onClose={() => setConflictModal({ isOpen: false, subtask: null, conflictData: null })}
                 title="Conflicto de sobrecarga"
+                icon={<AlertTriangle size={22} className="text-amber-500" />}
                 hideFooter={true}
             >
                 {conflictModal.conflictData && (

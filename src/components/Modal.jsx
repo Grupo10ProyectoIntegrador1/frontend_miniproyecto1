@@ -4,6 +4,7 @@ const Modal = ({
     isOpen,
     onClose,
     title,
+    icon,
     message,
     children,
     type = 'success', // 'warning', 'error', 'success'
@@ -34,7 +35,14 @@ const Modal = ({
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <div className={`bg-white rounded-2xl shadow-sm w-full ${maxWidthClass} p-6 transform transition-all`}>
-                <h2 className="text-xl font-bold text-slate-800 mb-2">{title}</h2>
+                <div className="flex items-center gap-3 mb-2">
+                    {icon && (
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                            {icon}
+                        </div>
+                    )}
+                    <h2 className="text-xl font-bold text-slate-800">{title}</h2>
+                </div>
 
                 {/* Si hay mensaje de texto, lo mostramos */}
                 {message && <p className="text-gray-500 text-sm mb-6 leading-relaxed">{message}</p>}
