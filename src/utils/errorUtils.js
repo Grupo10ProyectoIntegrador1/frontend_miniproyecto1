@@ -2,6 +2,7 @@ export const parseOverloadError = (error, defaultMessage = 'Ha ocurrido un error
     let errorMessage = defaultMessage;
     let isOverloadConflict = false;
     let conflictMessage = "";
+    let conflictPayload = null;
 
     if (error.response?.data) {
         const data = error.response.data;
@@ -10,9 +11,11 @@ export const parseOverloadError = (error, defaultMessage = 'Ha ocurrido un error
         if (data.overload_conflict) {
             isOverloadConflict = true;
             conflictMessage = data.overload_conflict.message || JSON.stringify(data.overload_conflict);
+            conflictPayload = data.overload_conflict;
         } else if (data.limit_hours !== undefined || data.exceeds_by !== undefined) {
             isOverloadConflict = true;
             conflictMessage = data.message || JSON.stringify(data);
+            conflictPayload = data;
         }
 
         if (data.errors && typeof data.errors === 'object' && Object.keys(data.errors).length > 0) {
@@ -53,6 +56,7 @@ export const parseOverloadError = (error, defaultMessage = 'Ha ocurrido un error
     return {
         isOverloadConflict,
         conflictMessage,
-        errorMessage
+        errorMessage,
+        conflictPayload
     };
 };
