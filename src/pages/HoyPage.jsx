@@ -157,6 +157,23 @@ const HoyPage = () => {
         }
     };
 
+    const handlePostpone = async (subtask) => {
+        if (!subtask?.id) return;
+
+        try {
+            await updateSubtask(subtask.id, { status: 'postponed' });
+            reload();
+        } catch (error) {
+            const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error posponiendo la subtarea.');
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                title: 'Error al actualizar',
+                message: errorMessage
+            });
+        }
+    };
+
     const handleOpenReschedule = (subtask) => {
         setRescheduleModal({
             isOpen: true,
@@ -406,7 +423,11 @@ const HoyPage = () => {
                     >
                         <CheckCircle2 size={18} /> Hecha
                     </button>
-                    <button title="Posponer" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer">
+                    <button
+                        onClick={() => handlePostpone(subtask)}
+                        title="Posponer"
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer"
+                    >
                         <Clock size={18} />
                     </button>
                     <button
