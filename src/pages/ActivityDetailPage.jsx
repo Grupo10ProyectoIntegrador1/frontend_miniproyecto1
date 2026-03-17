@@ -128,12 +128,30 @@ function ActivityDetailPage() {
         message: 'La actividad ha sido editada de manera exitosa.',
         onConfirm: null,
       })
-    } catch {
+    } catch (err) {
+      // Extract specific field errors from backend response
+      const backendErrors = err.response?.data?.errors;
+      let errorMessage = 'Ha ocurrido un error intentando editar la actividad. Inténtelo de nuevo.';
+
+      if (backendErrors) {
+        // Check for due_date conflict with subtasks
+        if (backendErrors.due_date) {
+          const dueDateErr = Array.isArray(backendErrors.due_date) ? backendErrors.due_date[0] : backendErrors.due_date;
+          errorMessage = dueDateErr;
+        } else {
+          // Collect all field errors
+          const messages = Object.values(backendErrors).flat();
+          if (messages.length > 0) {
+            errorMessage = messages.join(' ');
+          }
+        }
+      }
+
       setModalConfig({
         isOpen: true,
         type: 'error',
-        title: 'Error',
-        message: 'Ha ocurrido un error intentando editar la actividad. Inténtelo de nuevo.',
+        title: 'Error al editar',
+        message: errorMessage,
         onConfirm: null,
       })
     } finally {
@@ -185,24 +203,24 @@ function ActivityDetailPage() {
         onConfirm: null,
       })
     } else if (result?.error && result?.rawError) {
-        const { isOverloadConflict, conflictMessage, errorMessage } = parseOverloadError(result.rawError, 'Ha ocurrido un error al crear la subtarea. Inténtelo de nuevo.')
-        if (isOverloadConflict) {
-            setModalConfig({
-              isOpen: true,
-              type: 'error',
-              title: '¡Cuidado! Límite de capacidad excedido',
-              message: conflictMessage || errorMessage,
-              onConfirm: null,
-            })
-        } else {
-            setModalConfig({
-                isOpen: true,
-                type: 'error',
-                title: 'Error',
-                message: errorMessage,
-                onConfirm: null,
-            })
-        }
+      const { isOverloadConflict, conflictMessage, errorMessage } = parseOverloadError(result.rawError, 'Ha ocurrido un error al crear la subtarea. Inténtelo de nuevo.')
+      if (isOverloadConflict) {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: '¡Cuidado! Límite de capacidad excedido',
+          message: conflictMessage || errorMessage,
+          onConfirm: null,
+        })
+      } else {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Error',
+          message: errorMessage,
+          onConfirm: null,
+        })
+      }
     } else {
       setModalConfig({
         isOpen: true,
@@ -226,24 +244,24 @@ function ActivityDetailPage() {
         onConfirm: null,
       })
     } else if (result?.error && result?.rawError) {
-        const { isOverloadConflict, conflictMessage, errorMessage } = parseOverloadError(result.rawError, 'Ha ocurrido un error al editar la subtarea. Inténtelo de nuevo.')
-        if (isOverloadConflict) {
-            setModalConfig({
-              isOpen: true,
-              type: 'error',
-              title: '¡Cuidado! Límite de capacidad excedido',
-              message: conflictMessage || errorMessage,
-              onConfirm: null,
-            })
-        } else {
-            setModalConfig({
-                isOpen: true,
-                type: 'error',
-                title: 'Error',
-                message: errorMessage,
-                onConfirm: null,
-            })
-        }
+      const { isOverloadConflict, conflictMessage, errorMessage } = parseOverloadError(result.rawError, 'Ha ocurrido un error al editar la subtarea. Inténtelo de nuevo.')
+      if (isOverloadConflict) {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: '¡Cuidado! Límite de capacidad excedido',
+          message: conflictMessage || errorMessage,
+          onConfirm: null,
+        })
+      } else {
+        setModalConfig({
+          isOpen: true,
+          type: 'error',
+          title: 'Error',
+          message: errorMessage,
+          onConfirm: null,
+        })
+      }
     } else {
       setModalConfig({
         isOpen: true,

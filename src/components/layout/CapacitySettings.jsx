@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
-import { Settings, Save, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Settings, Save, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { userService } from '../../services/userService';
 
 function CapacitySettings({ isExpanded }) {
-    const [capacity, setCapacity] = useState(6.0);
+    const [savedCapacity, setSavedCapacity] = useState("6");
+    const [inputCapacity, setInputCapacity] = useState("6");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -11,20 +13,20 @@ function CapacitySettings({ isExpanded }) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     useEffect(() => {
-        if (isSettingsOpen) {
-            loadCapacity();
-        }
-    }, [isSettingsOpen]);
+        loadCapacity();
+    }, []);
 
     const loadCapacity = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await userService.getDailyCapacity();
-            setCapacity(data.daily_limit_hours);
+            const res = await userService.getDailyCapacity();
+            const val = res.data?.daily_limit_hours ?? res.daily_limit_hours ?? 6;
+            setSavedCapacity(val.toString());
+            setInputCapacity(val.toString());
         } catch (err) {
             console.error("Error cargando capacidad:", err);
-            setError("No se pudo cargar el límite actual.");
+            setError("No se pudo cargar el límite.");
         } finally {
             setIsLoading(false);
         }
@@ -34,7 +36,7 @@ function CapacitySettings({ isExpanded }) {
         setError(null);
         setSuccessMsg(null);
 
-        const hours = parseFloat(capacity);
+        const hours = parseFloat(inputCapacity.replace(',', '.'));
         if (isNaN(hours) || hours < 1 || hours > 16) {
             setError("El límite debe estar entre 1 y 16 horas.");
             return;
@@ -43,96 +45,119 @@ function CapacitySettings({ isExpanded }) {
         setIsSaving(true);
         try {
             await userService.updateDailyCapacity(hours);
-            setSuccessMsg("Capacidad actualizada.");
+            setSavedCapacity(hours.toString());
+            setSuccessMsg("Límite guardado con éxito.");
             setTimeout(() => {
                 setSuccessMsg(null);
-                setIsSettingsOpen(false); // Opcional: Cerrar después de guardar
+                setIsSettingsOpen(false);
             }, 2000);
         } catch (err) {
             console.error("Error guardando capacidad:", err);
-            setError(err.response?.data?.message || "Error al guardar el límite.");
+            // Try to extract conflict info from backend
+            const respData = err.response?.data;
+            const errors = respData?.errors;
+            if (errors?.daily_limit_hours) {
+                // Simple validation error
+                const msg = Array.isArray(errors.daily_limit_hours) ? errors.daily_limit_hours[0] : errors.daily_limit_hours;
+                setError(msg);
+            } else if (errors?.overload_conflict) {
+                const conflict = errors.overload_conflict[0];
+                const dates = conflict.conflicts?.map(c => c.date).join(', ') || '';
+                setError(`No puedes reducir: tienes días con más horas planificadas (${dates}).`);
+            } else {
+                setError("Error al guardar. Intenta de nuevo.");
+            }
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (!isExpanded && !isSettingsOpen) {
-         return (
-             <button
-                 onClick={() => setIsSettingsOpen(true)}
-                 className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50 flex flex-col justify-center gap-4 mt-2"
-                 title="Configurar Capacidad Diaria"
-             >
-                 <Settings size={20} />
-             </button>
-         );
-    }
+    if (isExpanded) {
+        const formatNum = (num) => Number(num).toString().replace('.', ',');
 
-    if (!isSettingsOpen) {
         return (
-            <button
-                onClick={() => setIsSettingsOpen(true)}
-                className={`flex items-center gap-3 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors px-3 py-2 w-full mt-2`}
-                title="Configurar Capacidad Diaria"
-            >
-                <Settings size={20} className="flex-shrink-0" />
-                <span className="whitespace-nowrap">Capacidad Diaria</span>
-            </button>
-        )
-    }
+            <div className="w-full text-slate-200 mt-auto mb-3 px-2 flex justify-center">
+                <div className="bg-[#1E2532] rounded-2xl px-3 py-2.5 shadow-md border border-[#2A3441] w-[180px] flex flex-col transition-all">
 
-    // Modal / Popover simplificado incrustado en el Sidebar temporalmente para ajustes
-    return (
-        <div className={`mt-2 bg-slate-800 rounded-xl p-3 border border-slate-700/50 ${isExpanded ? 'w-full' : 'absolute left-24 bottom-24 w-48 shadow-lg'}`}>
-            <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-slate-200">Límite Diario</span>
-                <button onClick={() => setIsSettingsOpen(false)} className="text-slate-500 hover:text-slate-300">
-                    &times;
-                </button>
-            </div>
-            
-            {isLoading ? (
-                <div className="flex justify-center py-2"><Loader2 size={16} className="animate-spin text-slate-400" /></div>
-            ) : (
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="number"
-                            min="1"
-                            max="16"
-                            step="0.5"
-                            value={capacity}
-                            onChange={(e) => setCapacity(e.target.value)}
-                            className="bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 w-full text-sm focus:outline-none focus:border-blue-500"
-                        />
-                        <span className="text-slate-400 text-sm">h/día</span>
+                    {/* Header compacto */}
+                    <div
+                        className="flex items-center justify-between cursor-pointer w-full select-none"
+                        onClick={() => {
+                            const next = !isSettingsOpen;
+                            if (next) setInputCapacity(savedCapacity);
+                            setIsSettingsOpen(next);
+                        }}
+                    >
+                        <div className="flex items-center gap-1.5">
+                            <Settings size={14} strokeWidth={1.5} className="text-[#8B98A9]" />
+                            <span className="font-semibold text-[11px] leading-tight text-[#CBD5E1]">Capacidad<br />Diaria</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                            <p className="text-white font-bold text-[16px] leading-none flex items-end gap-0.5">
+                                {isLoading ? '...' : formatNum(savedCapacity)}<span className="text-[11px] mb-[1px] text-[#94A3B8]">h</span>
+                            </p>
+                            <div className="text-[#8B98A9]">
+                                {isSettingsOpen ? <ChevronUp size={14} strokeWidth={2} /> : <ChevronDown size={14} strokeWidth={2} />}
+                            </div>
+                        </div>
                     </div>
 
-                    {error && (
-                        <div className="flex items-start gap-1 text-red-400 text-xs mt-1">
-                            <AlertCircle size={12} className="flex-shrink-0 mt-0.5" />
-                            <span>{error}</span>
-                        </div>
-                    )}
-                    
-                    {successMsg && (
-                        <div className="flex items-center gap-1 text-emerald-400 text-xs mt-1">
-                            <CheckCircle2 size={12} />
-                            <span>{successMsg}</span>
-                        </div>
-                    )}
+                    {/* Expandible */}
+                    {isSettingsOpen && (
+                        <div className="mt-2.5 pt-2.5 border-t border-[#2A3441] flex flex-col gap-2.5">
 
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="mt-1 flex justify-center items-center gap-1 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-1.5 rounded transition-colors disabled:opacity-50"
-                    >
-                        {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                        Guardar
-                    </button>
+                            {/* Input */}
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[#CBD5E1] text-[11px] font-semibold px-0.5">Límite Diario</label>
+                                <div className="flex items-center gap-1.5">
+                                    <input
+                                        type="text"
+                                        value={inputCapacity}
+                                        onChange={(e) => setInputCapacity(e.target.value)}
+                                        className="bg-[#111822] border border-[#2A3441] rounded-lg px-2 py-1.5 w-full text-[13px] font-bold text-white focus:outline-none focus:border-blue-500 transition-colors text-center"
+                                    />
+                                    <span className="text-[#8B98A9] font-semibold text-[11px] whitespace-nowrap">h/día</span>
+                                </div>
+                            </div>
+
+                            {/* Feedbacks */}
+                            {error && (
+                                <div className="flex items-start gap-1 text-red-400 text-[10px] font-medium leading-tight">
+                                    <AlertCircle size={12} className="flex-shrink-0 mt-0.5" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
+                            {successMsg && (
+                                <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-medium leading-tight">
+                                    <CheckCircle2 size={12} />
+                                    <span>{successMsg}</span>
+                                </div>
+                            )}
+
+                            {/* Guardar */}
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving || isLoading}
+                                className="flex justify-center items-center gap-1.5 w-full bg-[#3B82F6] hover:bg-blue-600 active:bg-blue-700 text-white text-[12px] font-bold py-1.5 rounded-lg transition-all shadow-sm disabled:opacity-50"
+                            >
+                                {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                Guardar
+                            </button>
+                        </div>
+                    )}
                 </div>
-            )}
-        </div>
+            </div>
+        );
+    }
+    return (
+        <button
+            onClick={() => { }}
+            className="text-[#8B98A9] hover:text-white transition-colors p-2 rounded-xl hover:bg-[#1E2532] flex flex-col justify-center mt-auto mb-4 mx-auto"
+            title="Configurar Capacidad Diaria"
+        >
+            <Settings size={22} strokeWidth={1.5} />
+        </button>
     );
 }
 
