@@ -107,6 +107,23 @@ const HoyPage = () => {
     });
     const [isReducing, setIsReducing] = useState(false);
 
+    const handleMarkDone = async (subtask) => {
+        if (!subtask?.id) return;
+
+        try {
+            await updateSubtask(subtask.id, { status: 'done' });
+            reload();
+        } catch (error) {
+            const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error marcando la subtarea como hecha.');
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                title: 'Error al actualizar',
+                message: errorMessage
+            });
+        }
+    };
+
     const handleOpenReschedule = (subtask) => {
         setRescheduleModal({
             isOpen: true,
@@ -338,16 +355,19 @@ const HoyPage = () => {
                 </div>
 
                 <div className="flex gap-2">
-                    <button className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
+                    <button
+                        onClick={() => handleMarkDone(subtask)}
+                        className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                    >
                         <CheckCircle2 size={18} /> Hecha
                     </button>
-                    <button title="Posponer" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                    <button title="Posponer" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer">
                         <Clock size={18} />
                     </button>
                     <button
                         onClick={() => handleOpenReschedule(subtask)}
                         title="Reprogramar"
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer">
                         <CalendarClock size={18} />
                     </button>
                 </div>
