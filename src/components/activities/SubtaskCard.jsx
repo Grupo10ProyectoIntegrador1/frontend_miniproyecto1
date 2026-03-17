@@ -7,7 +7,7 @@ const STATUS_MAP = {
   overdue: { label: 'Vencida', color: 'bg-red-100 text-red-700' },
 }
 
-const SubtaskCard = ({ subtask, onEdit, onDelete, deleting }) => {
+const SubtaskCard = ({ subtask, onEdit, onDelete, deleting, isDailyCapacityConflict = false }) => {
   const status = STATUS_MAP[subtask.status] || STATUS_MAP.pending
 
   const formatDate = (dateStr) => {
@@ -46,10 +46,16 @@ const SubtaskCard = ({ subtask, onEdit, onDelete, deleting }) => {
           </span>
         )}
         {subtask.estimated_hours && (
-          <span className="flex items-center gap-1">
-            <Clock size={12} />
-            {subtask.estimated_hours}h estimadas
-          </span>
+          isDailyCapacityConflict ? (
+            <span className="flex items-center gap-1">
+              ⚠️ {subtask.estimated_hours}h estimadas
+            </span>
+          ) : (
+            <span className="flex items-center gap-1">
+              <Clock size={12} />
+              {subtask.estimated_hours}h estimadas
+            </span>
+          )
         )}
       </div>
 

@@ -8,6 +8,8 @@ import Modal from '../components/Modal';
 import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const DAILY_CAPACITY_CONFLICT_STORAGE_KEY = 'dailyCapacityOverloadConflict';
+
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -46,6 +48,37 @@ const getBadge = (subtask, groupDefault) => {
 const HoyPage = () => {
     const { data, viewState, setFilters, reload } = useTodaySubtasks();
     const { overdue, today: todayTasks, upcoming } = data;
+
+    const [dailyCapacityConflict, setDailyCapacityConflict] = useState(null);
+
+    useEffect(() => {
+        const loadConflict = () => {
+            try {
+                const raw = sessionStorage.getItem(DAILY_CAPACITY_CONFLICT_STORAGE_KEY);
+                if (!raw) {
+                    setDailyCapacityConflict(null);
+                    return;
+                }
+                const parsed = JSON.parse(raw);
+                setDailyCapacityConflict(parsed);
+            } catch {
+                setDailyCapacityConflict(null);
+            }
+        };
+
+        const onConflictEvent = (evt) => {
+            const detail = evt?.detail;
+            if (!detail) {
+                setDailyCapacityConflict(null);
+                return;
+            }
+            setDailyCapacityConflict(detail);
+        };
+
+        loadConflict();
+        window.addEventListener('daily-capacity-conflict', onConflictEvent);
+        return () => window.removeEventListener('daily-capacity-conflict', onConflictEvent);
+    }, []);
 
     const [courses, setCourses] = useState(['Todos']);
     const [courseFilter, setCourseFilter] = useState('Todos');
@@ -314,13 +347,19 @@ const HoyPage = () => {
 
     const SubtaskCard = ({ subtask, badgeText, badgeClassName }) => {
         const parent = subtask.parent_activity;
+        const conflictDates = dailyCapacityConflict?.conflictDates || dailyCapacityConflict?.conflicts?.map(c => c.date) || [];
+        const isDailyConflict = Boolean(subtask?.target_date && conflictDates.includes(subtask.target_date));
         let icon = '📝';
         if (parent.type === 'project') icon = '💻';
         if (parent.type === 'exam' || parent.type === 'quiz') icon = '📚';
         if (parent.type === 'presentation') icon = '📊';
 
         return (
-            <div className="bg-white border border-zinc-100 rounded-2xl p-5 hover:shadow-sm transition-all shadow-sm mb-4">
+            <div className={`rounded-2xl p-5 hover:shadow-sm transition-all shadow-sm mb-4 ${
+                isDailyConflict
+                    ? 'bg-red-50 border-2 border-red-600'
+                    : 'bg-white border border-zinc-100'
+            }`}>
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <Link to={`/actividad/${parent.id}`}>
@@ -347,10 +386,16 @@ const HoyPage = () => {
                         {formatDateShort(subtask.target_date)}
                     </div>
                     {subtask.estimated_hours && (
-                        <div className="flex items-center gap-1.5">
-                            <Clock size={14} />
-                            {subtask.estimated_hours}h estimadas
-                        </div>
+                        isDailyConflict ? (
+                            <span className="flex items-center gap-1">
+                                ⚠️ {subtask.estimated_hours}h estimadas
+                            </span>
+                        ) : (
+                            <div className="flex items-center gap-1.5">
+                                <Clock size={14} />
+                                {subtask.estimated_hours}h estimadas
+                            </div>
+                        )
                     )}
                 </div>
 
