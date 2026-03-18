@@ -6,10 +6,13 @@ import {
     UserCircle,
     Plus,
     ArrowUpRight,
-    Loader2
+    Loader2,
+    ClipboardList,
+    CirclePlus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useActivities } from '../hooks/useActivities';
+import { useAuth } from '../context/useAuth';
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -21,13 +24,27 @@ const ACTIVITY_TYPES_MAP = {
 
 const ProgressPage = () => {
     const { activities, viewState, stats } = useActivities();
+    const { user, loading: authLoading } = useAuth();
+
+    const getProgressColor = (percentage) => {
+        const clamped = Math.max(0, Math.min(100, Number(percentage) || 0));
+        // 0% = red (0deg), 100% = green (120deg)
+        const hue = (clamped / 100) * 120;
+        return `hsl(${hue} 85% 45%)`;
+    };
+
+    const displayName = (() => {
+        const fullName = `${user?.name ?? ''} ${user?.last_name ?? ''}`.trim();
+        if (fullName) return fullName;
+        return 'Estudiante';
+    })();
 
     const renderHeader = () => (
         <div className="flex justify-between items-center mb-8 border-b border-zinc-100 pb-4">
             <h1 className="text-4xl font-extrabold text-[#0B1525] mb-2 tracking-tight">Progreso</h1>
             <div className="flex items-center gap-2 text-zinc-700">
                 <UserCircle className="text-blue-600" size={32} />
-                <span className="font-medium text-sm">Estudiante</span>
+                <span className="font-medium text-sm">{authLoading ? '...' : displayName}</span>
             </div>
         </div>
     );
@@ -179,12 +196,21 @@ const ProgressPage = () => {
                                 </span>
                             </div>
                             <p className="text-zinc-500 text-sm mb-2 font-medium">{(activity.completed || 0)}/{(activity.total || 0)} tareas</p>
-                            <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden mb-4">
-                                <div
-                                    className="h-full bg-blue-600 transition-all duration-1000"
-                                    style={{ width: `${activity.total > 0 ? (activity.completed / activity.total) * 100 : 0}%` }}
-                                ></div>
-                            </div>
+                            {(activity.total || 0) > 0 ? (
+                                <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden mb-4">
+                                    <div
+                                        className="h-full transition-all duration-1000"
+                                        style={{
+                                            width: `${(activity.completed / activity.total) * 100}%`,
+                                            backgroundColor: getProgressColor((activity.completed / activity.total) * 100),
+                                        }}
+                                    ></div>
+                                </div>
+                            ) : (
+                                <div className="w-full mb-4 px-4 py-3 rounded-lg bg-[#F8FAFC] border border-dashed border-zinc-300 text-zinc-500 text-sm font-semibold text-center">
+                                    Sin tareas asignadas
+                                </div>
+                            )}
                             <Link to={`/actividad/${activity.id}`} className="text-zinc-500 hover:text-blue-600 text-xs font-bold flex items-center gap-1.5 transition-colors group">
                                 <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                                 Ver detalle
@@ -196,10 +222,16 @@ const ProgressPage = () => {
 
             {viewState === 'empty' && (
                 <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
-                    <BookOpen className="text-zinc-800 mb-6" size={64} strokeWidth={1.5} />
-                    <h3 className="text-3xl font-bold text-zinc-900 mb-6 tracking-tight">¿Deseas crear tu primera actividad?</h3>
-                    <Link to="/crear" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl text-lg font-bold transition-all shadow-lg hover:shadow-xl active:scale-95">
-                        Crear actividad
+                    <div className="w-28 h-28 rounded-full bg-[#EFF6FF] flex items-center justify-center mb-6">
+                        <ClipboardList className="text-[#93C5FD]" size={64} strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-3xl font-bold text-zinc-900 mb-6 tracking-tight">No hay actividades aún</h3>
+                    <p className="text-zinc-500 text-lg mb-8 max-w-md leading-relaxed">
+                        Parece que tu tablero está vacío. Comienza a organizar tu progreso creando tu primera actividad para hacer seguimiento de tus tareas y metas. <br />
+                    </p>
+                    <Link to="/crear" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl text-lg font-bold transition-all shadow-lg hover:shadow-xl active:scale-95 inline-flex items-center justify-center gap-3">
+                        <CirclePlus className="text-white" size={22} />
+                        Crear mi primera actividad
                     </Link>
                 </div>
             )}
