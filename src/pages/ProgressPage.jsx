@@ -40,8 +40,33 @@ const ProgressPage = () => {
             subtext = `${stats.completed} de ${stats.total} tareas completadas en ${stats.activityCount} actividades.`;
             barColor = "bg-blue-600";
             percentageContent = (
-                <div className="relative flex items-center justify-center w-24 h-24 rounded-full border-4 border-blue-600">
-                    <span className="text-blue-600 font-bold text-xl">{stats.percentage}%</span>
+                <div className="relative w-24 h-24">
+                    <svg width={size} height={size} className="-rotate-90">
+                        <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            fill="transparent"
+                            stroke="rgb(228 228 231)"
+                            strokeWidth={stroke}
+                        />
+                        <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            fill="transparent"
+                            stroke="rgb(37 99 235)"
+                            strokeWidth={stroke}
+                            strokeLinecap="round"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={dashOffset}
+                            className="transition-[stroke-dashoffset] duration-700"
+                        />
+                    </svg>
+
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-blue-600 font-bold text-xl">{progress}%</span>
+                    </div>
                 </div>
             );
         } else if (state === 'empty') {
@@ -76,10 +101,38 @@ const ProgressPage = () => {
                             style={{ width: state === 'success' ? `${stats.percentage}%` : '100%' }}
                         ></div>
                     </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium bg-green-50 border-green-200 text-green-700">
+                            <span className="h-2.5 w-2.5 rounded-full bg-green-500"></span>
+                            {stats.completed} Completadas
+                        </span>
+
+                        <span className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium bg-zinc-50 border-zinc-200 text-zinc-700">
+                            <span className="h-2.5 w-2.5 rounded-full bg-zinc-500"></span>
+                            {stats.pending} Pendientes
+                        </span>
+
+                        <span className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium bg-amber-50 border-amber-200 text-amber-700">
+                            <span className="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+                            {stats.postponed} Pospuestas
+                        </span>
+
+                        <span className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium bg-red-50 border-red-200 text-red-700">
+                            <span className="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                            {stats.overdue} Vencidas
+                        </span>
+                    </div>
                 </div>
             </div>
         );
     };
+
+    const size = 96;
+    const stroke = 8;
+    const radius = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const progress = Math.max(0, Math.min(100, stats.percentage));
+    const dashOffset = circumference * (1 - progress / 100);
 
     if (viewState === 'loading') {
         return (

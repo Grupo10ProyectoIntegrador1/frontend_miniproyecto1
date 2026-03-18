@@ -8,6 +8,8 @@ import Modal from '../components/Modal';
 import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const DAILY_CAPACITY_CONFLICT_STORAGE_KEY = 'dailyCapacityOverloadConflict';
+
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -46,6 +48,37 @@ const getBadge = (subtask, groupDefault) => {
 const HoyPage = () => {
     const { data, viewState, setFilters, reload } = useTodaySubtasks();
     const { overdue, today: todayTasks, upcoming } = data;
+
+    const [dailyCapacityConflict, setDailyCapacityConflict] = useState(null);
+
+    useEffect(() => {
+        const loadConflict = () => {
+            try {
+                const raw = sessionStorage.getItem(DAILY_CAPACITY_CONFLICT_STORAGE_KEY);
+                if (!raw) {
+                    setDailyCapacityConflict(null);
+                    return;
+                }
+                const parsed = JSON.parse(raw);
+                setDailyCapacityConflict(parsed);
+            } catch {
+                setDailyCapacityConflict(null);
+            }
+        };
+
+        const onConflictEvent = (evt) => {
+            const detail = evt?.detail;
+            if (!detail) {
+                setDailyCapacityConflict(null);
+                return;
+            }
+            setDailyCapacityConflict(detail);
+        };
+
+        loadConflict();
+        window.addEventListener('daily-capacity-conflict', onConflictEvent);
+        return () => window.removeEventListener('daily-capacity-conflict', onConflictEvent);
+    }, []);
 
     const [courses, setCourses] = useState(['Todos']);
     const [courseFilter, setCourseFilter] = useState('Todos');
@@ -106,6 +139,40 @@ const HoyPage = () => {
         newHours: 0
     });
     const [isReducing, setIsReducing] = useState(false);
+
+    const handleMarkDone = async (subtask) => {
+        if (!subtask?.id) return;
+
+        try {
+            await updateSubtask(subtask.id, { status: 'done' });
+            reload();
+        } catch (error) {
+            const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error marcando la subtarea como hecha.');
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                title: 'Error al actualizar',
+                message: errorMessage
+            });
+        }
+    };
+
+    const handlePostpone = async (subtask) => {
+        if (!subtask?.id) return;
+
+        try {
+            await updateSubtask(subtask.id, { status: 'postponed' });
+            reload();
+        } catch (error) {
+            const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error posponiendo la subtarea.');
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                title: 'Error al actualizar',
+                message: errorMessage
+            });
+        }
+    };
 
     const handleOpenReschedule = (subtask) => {
         setRescheduleModal({
@@ -297,13 +364,19 @@ const HoyPage = () => {
 
     const SubtaskCard = ({ subtask, badgeText, badgeClassName }) => {
         const parent = subtask.parent_activity;
+        const conflictDates = dailyCapacityConflict?.conflictDates || dailyCapacityConflict?.conflicts?.map(c => c.date) || [];
+        const isDailyConflict = Boolean(subtask?.target_date && conflictDates.includes(subtask.target_date));
         let icon = '📝';
         if (parent.type === 'project') icon = '💻';
         if (parent.type === 'exam' || parent.type === 'quiz') icon = '📚';
         if (parent.type === 'presentation') icon = '📊';
 
         return (
-            <div className="bg-white border border-zinc-100 rounded-2xl p-5 hover:shadow-sm transition-all shadow-sm mb-4">
+            <div className={`rounded-2xl p-5 hover:shadow-sm transition-all shadow-sm mb-4 ${
+                isDailyConflict
+                    ? 'bg-red-50 border-2 border-red-600'
+                    : 'bg-white border border-zinc-100'
+            }`}>
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <Link to={`/actividad/${parent.id}`}>
@@ -330,24 +403,37 @@ const HoyPage = () => {
                         {formatDateShort(subtask.target_date)}
                     </div>
                     {subtask.estimated_hours && (
-                        <div className="flex items-center gap-1.5">
-                            <Clock size={14} />
-                            {subtask.estimated_hours}h estimadas
-                        </div>
+                        isDailyConflict ? (
+                            <span className="flex items-center gap-1">
+                                ⚠️ {subtask.estimated_hours}h estimadas
+                            </span>
+                        ) : (
+                            <div className="flex items-center gap-1.5">
+                                <Clock size={14} />
+                                {subtask.estimated_hours}h estimadas
+                            </div>
+                        )
                     )}
                 </div>
 
                 <div className="flex gap-2">
-                    <button className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
+                    <button
+                        onClick={() => handleMarkDone(subtask)}
+                        className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                    >
                         <CheckCircle2 size={18} /> Hecha
                     </button>
-                    <button title="Posponer" className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                    <button
+                        onClick={() => handlePostpone(subtask)}
+                        title="Posponer"
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer"
+                    >
                         <Clock size={18} />
                     </button>
                     <button
                         onClick={() => handleOpenReschedule(subtask)}
                         title="Reprogramar"
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors">
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer">
                         <CalendarClock size={18} />
                     </button>
                 </div>
