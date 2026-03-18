@@ -4,11 +4,11 @@ import { getActivities } from '../services/activityService';
 import { updateSubtask } from '../services/subtaskService';
 import { getLocalTodayStr } from '../utils/dateUtils';
 import { parseOverloadError } from '../utils/errorUtils';
+import { DAILY_CAPACITY_CONFLICT_STORAGE_KEY } from '../utils/dailyCapacityConflict';
 import Modal from '../components/Modal';
 import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const DAILY_CAPACITY_CONFLICT_STORAGE_KEY = 'dailyCapacityOverloadConflict';
+import { useAuth } from '../context/useAuth';
 
 
 const ACTIVITY_TYPES_MAP = {
@@ -20,7 +20,7 @@ const ACTIVITY_TYPES_MAP = {
 };
 
 const STATUS_TO_API = {
-    'Todos': '',
+    'Todos': 'all',
     'Pendiente': 'pending',
     'Completada': 'done',
     'Postergada': 'postponed',
@@ -47,7 +47,14 @@ const getBadge = (subtask, groupDefault) => {
 
 const HoyPage = () => {
     const { data, viewState, setFilters, reload } = useTodaySubtasks();
+    const { user, loading: authLoading } = useAuth();
     const { overdue, today: todayTasks, upcoming } = data;
+
+    const displayName = (() => {
+        const fullName = `${user?.name ?? ''} ${user?.last_name ?? ''}`.trim();
+        if (fullName) return fullName;
+        return 'Estudiante';
+    })();
 
     const [dailyCapacityConflict, setDailyCapacityConflict] = useState(null);
 
@@ -145,7 +152,15 @@ const HoyPage = () => {
 
         try {
             await updateSubtask(subtask.id, { status: 'done' });
-            reload();
+
+            // If user is filtered to a specific status (e.g., Vencida), switch back to
+            // Todos so the updated subtask is visible in the Completadas column.
+            if (subtask.status === 'overdue' && statusFilter !== 'Todos') {
+                setStatusFilter('Todos');
+                setFilters(prev => ({ ...prev, status: STATUS_TO_API['Todos'] }));
+            }
+
+            await reload();
         } catch (error) {
             const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error marcando la subtarea como hecha.');
             setAlertModal({
@@ -301,7 +316,7 @@ const HoyPage = () => {
             <div className="hidden md:flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200/80 shadow-sm">
                 <div className="text-right">
                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
-                    <span className="font-bold text-sm text-zinc-800 tracking-tight">Estudiante</span>
+                    <span className="font-bold text-sm text-zinc-800 tracking-tight">{authLoading ? '...' : displayName}</span>
                 </div>
                 <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
                     <UserCircle size={28} strokeWidth={1.5} />
@@ -354,8 +369,8 @@ const HoyPage = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
                     <span className="font-bold text-white block mb-1">Regla de prioridad</span>
-                    Las subtareas se agrupan en Vencidas, Para hoy y Próximas según su fecha objetivo.
-                    Dentro de cada grupo se ordenan por fecha (más antigua/cercana primero).
+                    Las subtareas se agrupan por estado en este orden: Pendiente, Postergada, Vencida y Completada.
+                    Dentro de cada grupo se ordenan por fecha objetivo (más cercana/antigua primero).
                     En caso de empate, se muestra primero la de menor esfuerzo estimado.
                 </div>
             </div>
@@ -419,21 +434,24 @@ const HoyPage = () => {
                 <div className="flex gap-2">
                     <button
                         onClick={() => handleMarkDone(subtask)}
-                        className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                        disabled={subtask.status === 'done'}
+                        className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-300 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:hover:bg-zinc-300"
                     >
                         <CheckCircle2 size={18} /> Hecha
                     </button>
                     <button
                         onClick={() => handlePostpone(subtask)}
                         title="Posponer"
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer"
+                        disabled={subtask.status === 'done'}
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
                     >
                         <Clock size={18} />
                     </button>
                     <button
                         onClick={() => handleOpenReschedule(subtask)}
                         title="Reprogramar"
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer">
+                        disabled={subtask.status === 'done'}
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100">
                         <CalendarClock size={18} />
                     </button>
                 </div>
@@ -443,50 +461,61 @@ const HoyPage = () => {
 
     const renderSuccess = () => (
         <div className="flex flex-row gap-6 overflow-x-auto pb-8 items-start w-full snap-x">
-            {overdue.length > 0 && (
-                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
-                    <h2 className="text-xl font-bold text-red-600 mb-5 flex items-center gap-2">
-                        Vencidas
-                        <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{overdue.length}</span>
-                    </h2>
-                    <div className="flex flex-col">
-                        {overdue.map(sub => {
-                            const badge = getBadge(sub, { text: 'Vencida', className: 'bg-red-600 text-white' });
-                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                        })}
-                    </div>
-                </section>
-            )}
+            {[
+                {
+                    key: 'pending',
+                    title: 'Pendientes',
+                    titleClass: 'text-zinc-700',
+                    countClass: 'bg-zinc-200 text-zinc-600',
+                },
+                {
+                    key: 'postponed',
+                    title: 'Postergadas',
+                    titleClass: 'text-amber-600',
+                    countClass: 'bg-amber-100 text-amber-700',
+                },
+                {
+                    key: 'overdue',
+                    title: 'Vencidas',
+                    titleClass: 'text-red-600',
+                    countClass: 'bg-red-600 text-white',
+                },
+                {
+                    key: 'done',
+                    title: 'Completadas',
+                    titleClass: 'text-green-700',
+                    countClass: 'bg-green-100 text-green-700',
+                },
+            ].map((group) => {
+                const allSubtasks = [...overdue, ...todayTasks, ...upcoming];
+                const grouped = allSubtasks
+                    .filter((sub) => sub.status === group.key)
+                    .sort((a, b) => {
+                        const dateA = a.target_date || '9999-12-31';
+                        const dateB = b.target_date || '9999-12-31';
+                        if (dateA !== dateB) return dateA.localeCompare(dateB);
+                        const hoursA = Number(a.estimated_hours) || 0;
+                        const hoursB = Number(b.estimated_hours) || 0;
+                        return hoursA - hoursB;
+                    });
 
-            {todayTasks.length > 0 && (
-                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
-                    <h2 className="text-xl font-bold text-blue-500 mb-5 flex items-center gap-2">
-                        Para hoy
-                        <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{todayTasks.length}</span>
-                    </h2>
-                    <div className="flex flex-col">
-                        {todayTasks.map(sub => {
-                            const badge = getBadge(sub, { text: 'Para hoy', className: 'bg-blue-500 text-white' });
-                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                        })}
-                    </div>
-                </section>
-            )}
+                if (grouped.length === 0) return null;
 
-            {upcoming.length > 0 && (
-                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
-                    <h2 className="text-xl font-bold text-zinc-800 mb-5 flex items-center gap-2">
-                        Próximas {daysFilter !== '' ? `(${daysFilter} días)` : ''}
-                        <span className="bg-zinc-200 text-zinc-600 text-xs px-2 py-0.5 rounded-full">{upcoming.length}</span>
-                    </h2>
-                    <div className="flex flex-col">
-                        {upcoming.map(sub => {
-                            const badge = getBadge(sub, { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' });
-                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                        })}
-                    </div>
-                </section>
-            )}
+                return (
+                    <section key={group.key} className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                        <h2 className={`text-xl font-bold mb-5 flex items-center gap-2 ${group.titleClass}`}>
+                            {group.title}
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${group.countClass}`}>{grouped.length}</span>
+                        </h2>
+                        <div className="flex flex-col">
+                            {grouped.map((sub) => {
+                                const badge = STATUS_BADGE[sub.status] || { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' };
+                                return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                            })}
+                        </div>
+                    </section>
+                );
+            })}
         </div>
     );
 

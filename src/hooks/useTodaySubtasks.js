@@ -4,7 +4,7 @@ import { getTodaySubtasks } from '../services/subtaskService'
 export const useTodaySubtasks = () => {
     const [viewState, setViewState] = useState('loading')
     const [data, setData] = useState({ overdue: [], today: [], upcoming: [] })
-    const [filters, setFilters] = useState({ course: '', status: '', days: '' })
+    const [filters, setFilters] = useState({ course: '', status: 'all', days: '' })
 
     const loadData = useCallback(async () => {
         setViewState('loading')

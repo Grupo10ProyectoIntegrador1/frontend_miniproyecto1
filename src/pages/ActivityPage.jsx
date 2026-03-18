@@ -14,6 +14,8 @@ import {
 import { Link } from 'react-router-dom';
 import { useActivities } from '../hooks/useActivities';
 import { deleteActivity } from '../services/activityService';
+import { useAuth } from '../context/useAuth';
+import { syncDailyCapacityConflictWithBackend } from '../utils/dailyCapacityConflict';
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -25,7 +27,14 @@ const ACTIVITY_TYPES_MAP = {
 
 const ActivityPage = () => {
     const { activities = [], viewState, reload } = useActivities();
+    const { user, loading: authLoading } = useAuth();
     const [deletingId, setDeletingId] = React.useState(null)
+
+    const displayName = (() => {
+        const fullName = `${user?.name ?? ''} ${user?.last_name ?? ''}`.trim();
+        if (fullName) return fullName;
+        return 'Estudiante';
+    })();
 
     const handleDelete = async (id) => {
         if (!window.confirm('¿Estás seguro de que deseas eliminar esta actividad?')) return
@@ -33,6 +42,7 @@ const ActivityPage = () => {
         try {
             await deleteActivity(id)
             reload() // Recarga la lista después de eliminar
+            await syncDailyCapacityConflictWithBackend()
         } catch {
             alert('Ocurrió un error al eliminar la actividad. Intenta de nuevo.')
         } finally {
@@ -54,7 +64,7 @@ const ActivityPage = () => {
             <div className="hidden md:flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200 shadow-sm">
                 <div className="text-right">
                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
-                    <span className="font-bold text-sm text-zinc-800">Estudiante</span>
+                    <span className="font-bold text-sm text-zinc-800">{authLoading ? '...' : displayName}</span>
                 </div>
                 <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
                     <UserCircle size={32} strokeWidth={1.5} />
