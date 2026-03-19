@@ -241,7 +241,8 @@ const HoyPage = () => {
         try {
             await updateSubtask(rescheduleModal.subtask.id, {
                 target_date: rescheduleModal.newDate,
-                status: 'postponed'
+                // Reprogramar = volver a planificar (no es posponer)
+                status: 'pending'
             });
 
             // Si todo sale bien
@@ -302,7 +303,8 @@ const HoyPage = () => {
             await updateSubtask(reduceModal.subtask.id, {
                 target_date: reduceModal.newDate,
                 estimated_hours: reduceModal.newHours,
-                status: 'postponed'
+                // Reducir horas para resolver conflicto mantiene la subtarea planificada
+                status: 'pending'
             });
 
             setAlertModal({
