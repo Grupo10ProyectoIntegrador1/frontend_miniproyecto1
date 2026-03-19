@@ -49,6 +49,7 @@ const HoyPage = () => {
     const { data, viewState, setFilters, reload } = useTodaySubtasks();
     const { user, loading: authLoading } = useAuth();
     const { overdue, today: todayTasks, upcoming } = data;
+    const todayStr = getLocalTodayStr();
 
     const displayName = (() => {
         const fullName = `${user?.name ?? ''} ${user?.last_name ?? ''}`.trim();
@@ -401,8 +402,8 @@ const HoyPage = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
                     <span className="font-bold text-white block mb-1">Regla de prioridad</span>
-                    Las subtareas se agrupan por estado en este orden: Pendiente, Postergada, Vencida y Completada.
-                    Dentro de cada grupo se ordenan por fecha objetivo (más cercana/antigua primero).
+                    Las subtareas se agrupan en este orden: Vencidas, Para Hoy, Próximas, Postergadas y Completadas.
+                    Dentro de cada grupo se ordenan por fecha objetivo y luego por menor esfuerzo estimado.
                     En caso de empate, se muestra primero la de menor esfuerzo estimado.
                 </div>
             </div>
@@ -501,65 +502,98 @@ const HoyPage = () => {
         );
     };
 
-    const renderSuccess = () => (
-        <div className="flex flex-row gap-6 overflow-x-auto pb-8 items-start w-full snap-x">
-            {[
-                {
-                    key: 'pending',
-                    title: 'Pendientes',
-                    titleClass: 'text-zinc-700',
-                    countClass: 'bg-zinc-200 text-zinc-600',
-                },
-                {
-                    key: 'postponed',
-                    title: 'Postergadas',
-                    titleClass: 'text-amber-600',
-                    countClass: 'bg-amber-100 text-amber-700',
-                },
-                {
-                    key: 'overdue',
-                    title: 'Vencidas',
-                    titleClass: 'text-red-600',
-                    countClass: 'bg-red-600 text-white',
-                },
-                {
-                    key: 'done',
-                    title: 'Completadas',
-                    titleClass: 'text-green-700',
-                    countClass: 'bg-green-100 text-green-700',
-                },
-            ].map((group) => {
-                const allSubtasks = [...overdue, ...todayTasks, ...upcoming];
-                const grouped = allSubtasks
-                    .filter((sub) => sub.status === group.key)
-                    .sort((a, b) => {
-                        const dateA = a.target_date || '9999-12-31';
-                        const dateB = b.target_date || '9999-12-31';
-                        if (dateA !== dateB) return dateA.localeCompare(dateB);
-                        const hoursA = Number(a.estimated_hours) || 0;
-                        const hoursB = Number(b.estimated_hours) || 0;
-                        return hoursA - hoursB;
-                    });
+    const renderSuccess = () => {
+        const sortByDateAndHours = (a, b) => {
+            const dateA = a.target_date || '9999-12-31';
+            const dateB = b.target_date || '9999-12-31';
+            if (dateA !== dateB) return dateA.localeCompare(dateB);
+            const hoursA = Number(a.estimated_hours) || 0;
+            const hoursB = Number(b.estimated_hours) || 0;
+            return hoursA - hoursB;
+        };
 
-                if (grouped.length === 0) return null;
+        const allSubtasks = [...overdue, ...todayTasks, ...upcoming];
 
-                return (
-                    <section key={group.key} className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
-                        <h2 className={`text-xl font-bold mb-5 flex items-center gap-2 ${group.titleClass}`}>
-                            {group.title}
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${group.countClass}`}>{grouped.length}</span>
-                        </h2>
-                        <div className="flex flex-col">
-                            {grouped.map((sub) => {
-                                const badge = STATUS_BADGE[sub.status] || { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' };
-                                return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                            })}
-                        </div>
-                    </section>
-                );
-            })}
-        </div>
-    );
+        const doneGrouped = allSubtasks
+            .filter((sub) => sub.status === 'done')
+            .sort(sortByDateAndHours);
+
+        const postponedGrouped = allSubtasks
+            .filter((sub) => sub.status === 'postponed')
+            .sort(sortByDateAndHours);
+
+        const overdueGrouped = overdue
+            .filter((sub) => sub.status !== 'done' && sub.status !== 'postponed')
+            .sort(sortByDateAndHours);
+
+        const todayGrouped = todayTasks
+            .filter((sub) => sub.target_date === todayStr && sub.status !== 'done' && sub.status !== 'postponed')
+            .sort(sortByDateAndHours);
+
+        const upcomingGrouped = upcoming
+            .filter((sub) => sub.target_date && sub.target_date > todayStr && sub.status !== 'done' && sub.status !== 'postponed')
+            .sort(sortByDateAndHours);
+
+        const groups = [
+            {
+                key: 'overdue',
+                title: 'Vencidas',
+                titleClass: 'text-red-600',
+                countClass: 'bg-red-600 text-white',
+                items: overdueGrouped,
+            },
+            {
+                key: 'today',
+                title: 'Para Hoy',
+                titleClass: 'text-blue-700',
+                countClass: 'bg-blue-100 text-blue-700',
+                items: todayGrouped,
+            },
+            {
+                key: 'upcoming',
+                title: 'Próximas',
+                titleClass: 'text-zinc-700',
+                countClass: 'bg-zinc-200 text-zinc-600',
+                items: upcomingGrouped,
+            },
+            {
+                key: 'postponed',
+                title: 'Postergadas',
+                titleClass: 'text-amber-600',
+                countClass: 'bg-amber-100 text-amber-700',
+                items: postponedGrouped,
+            },
+            {
+                key: 'done',
+                title: 'Completadas',
+                titleClass: 'text-green-700',
+                countClass: 'bg-green-100 text-green-700',
+                items: doneGrouped,
+            },
+        ];
+
+        return (
+            <div className="flex flex-row gap-6 overflow-x-auto pb-8 items-start w-full snap-x">
+                {groups.map((group) => {
+                    if (!group.items || group.items.length === 0) return null;
+                    return (
+                        <section key={group.key} className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                            <h2 className={`text-xl font-bold mb-5 flex items-center gap-2 ${group.titleClass}`}>
+                                {group.title}
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${group.countClass}`}>{group.items.length}</span>
+                            </h2>
+                            <div className="flex flex-col">
+                                {group.items.map((sub) => {
+                                    const badge = STATUS_BADGE[sub.status] || { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' };
+                                    return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                                })}
+                            </div>
+                        </section>
+                    );
+                })}
+            </div>
+        );
+    };
 
     const renderModals = () => (
         <>
