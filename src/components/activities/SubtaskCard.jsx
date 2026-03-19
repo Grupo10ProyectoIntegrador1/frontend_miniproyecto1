@@ -39,7 +39,7 @@ const SubtaskCard = ({ subtask, onEdit, onDelete, deleting, isDailyCapacityConfl
 
       {/* Info */}
       <div className="flex items-center gap-4 text-xs text-gray-400">
-        {subtask.target_date && (
+        {subtask.target_date && subtask.status !== 'postponed' && (
           <span className="flex items-center gap-1">
             <Calendar size={12} />
             {formatDate(subtask.target_date)}

@@ -445,10 +445,12 @@ const HoyPage = () => {
                 </div>
 
                 <div className="flex items-center gap-5 text-zinc-400 text-xs font-semibold mb-6">
-                    <div className="flex items-center gap-1.5">
-                        <Calendar size={14} />
-                        {formatDateShort(subtask.target_date)}
-                    </div>
+                    {subtask.status !== 'postponed' && (
+                        <div className="flex items-center gap-1.5">
+                            <Calendar size={14} />
+                            {formatDateShort(subtask.target_date)}
+                        </div>
+                    )}
                     {subtask.estimated_hours && (
                         isDailyConflict ? (
                             <span className="flex items-center gap-1">
