@@ -147,6 +147,27 @@ const HoyPage = () => {
     });
     const [isReducing, setIsReducing] = useState(false);
 
+    const [postponeModal, setPostponeModal] = useState({
+        isOpen: false,
+        subtask: null,
+        note: ''
+    });
+    const [isPostponing, setIsPostponing] = useState(false);
+
+    const handleOpenPostpone = (subtask) => {
+        if (!subtask?.id) return;
+        setPostponeModal({
+            isOpen: true,
+            subtask,
+            note: ''
+        });
+    };
+
+    const handleClosePostpone = () => {
+        if (isPostponing) return;
+        setPostponeModal({ isOpen: false, subtask: null, note: '' });
+    };
+
     const handleMarkDone = async (subtask) => {
         if (!subtask?.id) return;
 
@@ -172,11 +193,20 @@ const HoyPage = () => {
         }
     };
 
-    const handlePostpone = async (subtask) => {
+    const handlePostponeConfirm = async () => {
+        const subtask = postponeModal.subtask;
         if (!subtask?.id) return;
 
+        const trimmedNote = (postponeModal.note || '').trim();
+        const payload = {
+            status: 'postponed',
+            ...(trimmedNote ? { note: trimmedNote } : {})
+        };
+
+        setIsPostponing(true);
         try {
-            await updateSubtask(subtask.id, { status: 'postponed' });
+            await updateSubtask(subtask.id, payload);
+            handleClosePostpone();
             reload();
         } catch (error) {
             const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error posponiendo la subtarea.');
@@ -186,6 +216,8 @@ const HoyPage = () => {
                 title: 'Error al actualizar',
                 message: errorMessage
             });
+        } finally {
+            setIsPostponing(false);
         }
     };
 
@@ -431,6 +463,14 @@ const HoyPage = () => {
                     )}
                 </div>
 
+                    {Boolean(subtask?.note && String(subtask.note).trim()) && (
+                        <div className="mb-6">
+                            <div className="w-full px-4 py-3 rounded-lg bg-[#F8FAFC] border border-dashed border-zinc-300 text-zinc-500 text-sm font-semibold whitespace-pre-wrap">
+                                {String(subtask.note).trim()}
+                            </div>
+                        </div>
+                    )}
+
                 <div className="flex gap-2">
                     <button
                         onClick={() => handleMarkDone(subtask)}
@@ -440,7 +480,7 @@ const HoyPage = () => {
                         <CheckCircle2 size={18} /> Hecha
                     </button>
                     <button
-                        onClick={() => handlePostpone(subtask)}
+                        onClick={() => handleOpenPostpone(subtask)}
                         title="Posponer"
                         disabled={subtask.status === 'done'}
                         className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
@@ -521,6 +561,34 @@ const HoyPage = () => {
 
     const renderModals = () => (
         <>
+            {/* Modal Posponer con nota opcional */}
+            <Modal
+                isOpen={postponeModal.isOpen}
+                onClose={handleClosePostpone}
+                onConfirm={handlePostponeConfirm}
+                title="Posponer"
+                confirmText="Posponer"
+                cancelText="Cancelar"
+                showCancel={true}
+                isLoading={isPostponing}
+                size="md"
+            >
+                <div className="py-2">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-zinc-700">
+                            Mensaje (opcional)
+                        </label>
+                        <textarea
+                            value={postponeModal.note}
+                            onChange={(e) => setPostponeModal(prev => ({ ...prev, note: e.target.value }))}
+                            rows={4}
+                            placeholder="Escribe una nota sobre por qué la pospones (opcional)"
+                            className="w-full border border-zinc-300 rounded-lg px-4 py-3 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 resize-none"
+                        />
+                    </div>
+                </div>
+            </Modal>
+
             {/* Modal Reprogramar */}
             <Modal
                 isOpen={rescheduleModal.isOpen}

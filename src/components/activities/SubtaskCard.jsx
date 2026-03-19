@@ -59,6 +59,12 @@ const SubtaskCard = ({ subtask, onEdit, onDelete, deleting, isDailyCapacityConfl
         )}
       </div>
 
+      {Boolean(subtask?.note && String(subtask.note).trim()) && (
+        <div className="w-full px-4 py-3 rounded-lg bg-[#F8FAFC] border border-dashed border-zinc-300 text-zinc-500 text-sm font-semibold whitespace-pre-wrap">
+          {String(subtask.note).trim()}
+        </div>
+      )}
+
       {/* Acciones */}
       <div className="flex items-center gap-2 pt-1 border-t border-gray-100">
         <button
