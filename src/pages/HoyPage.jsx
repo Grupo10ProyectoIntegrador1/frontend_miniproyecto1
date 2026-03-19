@@ -402,7 +402,8 @@ const HoyPage = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
                     <span className="font-bold text-white block mb-1">Regla de prioridad</span>
-                    Las subtareas se agrupan en este orden: Vencidas, Para Hoy, Próximas, Postergadas y Completadas.
+                    Las subtareas se agrupan en este orden: Vencidas, Para Hoy, Próximas y Completadas.
+                    Las postergadas se muestran dentro de Próximas.
                     Dentro de cada grupo se ordenan por fecha objetivo y luego por menor esfuerzo estimado.
                     En caso de empate, se muestra primero la de menor esfuerzo estimado.
                 </div>
@@ -504,8 +505,8 @@ const HoyPage = () => {
 
     const renderSuccess = () => {
         const sortByDateAndHours = (a, b) => {
-            const dateA = a.target_date || '9999-12-31';
-            const dateB = b.target_date || '9999-12-31';
+            const dateA = a.status === 'postponed' ? '9999-12-31' : (a.target_date || '9999-12-31');
+            const dateB = b.status === 'postponed' ? '9999-12-31' : (b.target_date || '9999-12-31');
             if (dateA !== dateB) return dateA.localeCompare(dateB);
             const hoursA = Number(a.estimated_hours) || 0;
             const hoursB = Number(b.estimated_hours) || 0;
@@ -518,10 +519,6 @@ const HoyPage = () => {
             .filter((sub) => sub.status === 'done')
             .sort(sortByDateAndHours);
 
-        const postponedGrouped = allSubtasks
-            .filter((sub) => sub.status === 'postponed')
-            .sort(sortByDateAndHours);
-
         const overdueGrouped = overdue
             .filter((sub) => sub.status !== 'done' && sub.status !== 'postponed')
             .sort(sortByDateAndHours);
@@ -530,9 +527,10 @@ const HoyPage = () => {
             .filter((sub) => sub.target_date === todayStr && sub.status !== 'done' && sub.status !== 'postponed')
             .sort(sortByDateAndHours);
 
-        const upcomingGrouped = upcoming
-            .filter((sub) => sub.target_date && sub.target_date > todayStr && sub.status !== 'done' && sub.status !== 'postponed')
-            .sort(sortByDateAndHours);
+        const upcomingGrouped = [
+            ...upcoming.filter((sub) => sub.status !== 'done' && sub.status !== 'postponed'),
+            ...allSubtasks.filter((sub) => sub.status === 'postponed')
+        ].sort(sortByDateAndHours);
 
         const groups = [
             {
@@ -555,13 +553,6 @@ const HoyPage = () => {
                 titleClass: 'text-zinc-700',
                 countClass: 'bg-zinc-200 text-zinc-600',
                 items: upcomingGrouped,
-            },
-            {
-                key: 'postponed',
-                title: 'Postergadas',
-                titleClass: 'text-amber-600',
-                countClass: 'bg-amber-100 text-amber-700',
-                items: postponedGrouped,
             },
             {
                 key: 'done',
