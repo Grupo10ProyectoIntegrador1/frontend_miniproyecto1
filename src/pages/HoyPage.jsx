@@ -174,14 +174,6 @@ const HoyPage = () => {
 
         try {
             await updateSubtask(subtask.id, { status: 'done' });
-
-            // If user is filtered to a specific status (e.g., Vencida), switch back to
-            // Todos so the updated subtask is visible in the Completadas column.
-            if (subtask.status === 'overdue' && statusFilter !== 'Todos') {
-                setStatusFilter('Todos');
-                setFilters(prev => ({ ...prev, status: STATUS_TO_API['Todos'] }));
-            }
-
             await reload();
         } catch (error) {
             const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error marcando la subtarea como hecha.');
@@ -404,7 +396,8 @@ const HoyPage = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
                     <span className="font-bold text-white block mb-1">Regla de prioridad</span>
-                    Las subtareas se agrupan en este orden: Vencidas, Para Hoy, Próximas y Completadas.
+                    En "Todos" se agrupan en este orden: Vencidas, Para Hoy y Próximas.
+                    Si filtras por "Completada", se muestra el grupo Completadas.
                     Las postergadas se muestran dentro de Próximas.
                     Dentro de cada grupo se ordenan por fecha objetivo y luego por menor esfuerzo estimado.
                     En caso de empate, se muestra primero la de menor esfuerzo estimado.
@@ -556,13 +549,17 @@ const HoyPage = () => {
                 countClass: 'bg-zinc-200 text-zinc-600',
                 items: upcomingGrouped,
             },
-            {
-                key: 'done',
-                title: 'Completadas',
-                titleClass: 'text-green-700',
-                countClass: 'bg-green-100 text-green-700',
-                items: doneGrouped,
-            },
+            ...(statusFilter === 'Todos'
+                ? []
+                : [
+                    {
+                        key: 'done',
+                        title: 'Completadas',
+                        titleClass: 'text-green-700',
+                        countClass: 'bg-green-100 text-green-700',
+                        items: doneGrouped,
+                    },
+                ]),
         ];
 
         return (
