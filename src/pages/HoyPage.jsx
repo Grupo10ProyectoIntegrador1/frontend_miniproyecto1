@@ -4,11 +4,12 @@ import { getActivities } from '../services/activityService';
 import { updateSubtask } from '../services/subtaskService';
 import { getLocalTodayStr } from '../utils/dateUtils';
 import { parseOverloadError } from '../utils/errorUtils';
+import { DAILY_CAPACITY_CONFLICT_STORAGE_KEY } from '../utils/dailyCapacityConflict';
+import { clearStoredPostponeNote, getStoredPostponeNote, setStoredPostponeNote } from '../utils/postponeNote';
 import Modal from '../components/Modal';
 import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const DAILY_CAPACITY_CONFLICT_STORAGE_KEY = 'dailyCapacityOverloadConflict';
+import { useAuth } from '../context/useAuth';
 
 
 const ACTIVITY_TYPES_MAP = {
@@ -20,7 +21,7 @@ const ACTIVITY_TYPES_MAP = {
 };
 
 const STATUS_TO_API = {
-    'Todos': '',
+    'Todos': 'all',
     'Pendiente': 'pending',
     'Completada': 'done',
     'Postergada': 'postponed',
@@ -47,7 +48,15 @@ const getBadge = (subtask, groupDefault) => {
 
 const HoyPage = () => {
     const { data, viewState, setFilters, reload } = useTodaySubtasks();
+    const { user, loading: authLoading } = useAuth();
     const { overdue, today: todayTasks, upcoming } = data;
+    const todayStr = getLocalTodayStr();
+
+    const displayName = (() => {
+        const fullName = `${user?.name ?? ''} ${user?.last_name ?? ''}`.trim();
+        if (fullName) return fullName;
+        return 'Estudiante';
+    })();
 
     const [dailyCapacityConflict, setDailyCapacityConflict] = useState(null);
 
@@ -140,12 +149,36 @@ const HoyPage = () => {
     });
     const [isReducing, setIsReducing] = useState(false);
 
+    const [postponeModal, setPostponeModal] = useState({
+        isOpen: false,
+        subtask: null,
+        note: ''
+    });
+    const [isPostponing, setIsPostponing] = useState(false);
+
+    const handleOpenPostpone = (subtask) => {
+        if (!subtask?.id) return;
+        setPostponeModal({
+            isOpen: true,
+            subtask,
+            note: ''
+        });
+    };
+
+    const handleClosePostpone = () => {
+        if (isPostponing) return;
+        setPostponeModal({ isOpen: false, subtask: null, note: '' });
+    };
+
     const handleMarkDone = async (subtask) => {
         if (!subtask?.id) return;
 
         try {
             await updateSubtask(subtask.id, { status: 'done' });
-            reload();
+
+            clearStoredPostponeNote(subtask.id);
+
+            await reload();
         } catch (error) {
             const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error marcando la subtarea como hecha.');
             setAlertModal({
@@ -157,11 +190,25 @@ const HoyPage = () => {
         }
     };
 
-    const handlePostpone = async (subtask) => {
+    const handlePostponeConfirm = async () => {
+        const subtask = postponeModal.subtask;
         if (!subtask?.id) return;
 
+        const trimmedNote = (postponeModal.note || '').trim();
+        const payload = { status: 'postponed' };
+
+        setIsPostponing(true);
         try {
-            await updateSubtask(subtask.id, { status: 'postponed' });
+            await updateSubtask(subtask.id, payload);
+
+            // El backend actual no soporta `note` en Subtask; persistimos el mensaje localmente.
+            if (trimmedNote) {
+                setStoredPostponeNote(subtask.id, trimmedNote);
+            } else {
+                clearStoredPostponeNote(subtask.id);
+            }
+
+            handleClosePostpone();
             reload();
         } catch (error) {
             const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error posponiendo la subtarea.');
@@ -171,6 +218,8 @@ const HoyPage = () => {
                 title: 'Error al actualizar',
                 message: errorMessage
             });
+        } finally {
+            setIsPostponing(false);
         }
     };
 
@@ -193,8 +242,11 @@ const HoyPage = () => {
         try {
             await updateSubtask(rescheduleModal.subtask.id, {
                 target_date: rescheduleModal.newDate,
-                status: 'postponed'
+                // Reprogramar = volver a planificar (no es posponer)
+                status: 'pending'
             });
+
+            clearStoredPostponeNote(rescheduleModal.subtask.id);
 
             // Si todo sale bien
             setAlertModal({
@@ -254,8 +306,11 @@ const HoyPage = () => {
             await updateSubtask(reduceModal.subtask.id, {
                 target_date: reduceModal.newDate,
                 estimated_hours: reduceModal.newHours,
-                status: 'postponed'
+                // Reducir horas para resolver conflicto mantiene la subtarea planificada
+                status: 'pending'
             });
+
+            clearStoredPostponeNote(reduceModal.subtask.id);
 
             setAlertModal({
                 isOpen: true,
@@ -301,7 +356,7 @@ const HoyPage = () => {
             <div className="hidden md:flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200/80 shadow-sm">
                 <div className="text-right">
                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
-                    <span className="font-bold text-sm text-zinc-800 tracking-tight">Estudiante</span>
+                    <span className="font-bold text-sm text-zinc-800 tracking-tight">{authLoading ? '...' : displayName}</span>
                 </div>
                 <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
                     <UserCircle size={28} strokeWidth={1.5} />
@@ -354,8 +409,10 @@ const HoyPage = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
                     <span className="font-bold text-white block mb-1">Regla de prioridad</span>
-                    Las subtareas se agrupan en Vencidas, Para hoy y Próximas según su fecha objetivo.
-                    Dentro de cada grupo se ordenan por fecha (más antigua/cercana primero).
+                    Las subtareas se agrupan en este orden: Vencidas, Para Hoy y Próximas.
+                    Si filtras por un estado específico, también se muestran las Completadas.
+                    Las postergadas se muestran dentro de Próximas.
+                    Dentro de cada grupo se ordenan por fecha objetivo y luego por menor esfuerzo estimado.
                     En caso de empate, se muestra primero la de menor esfuerzo estimado.
                 </div>
             </div>
@@ -366,6 +423,7 @@ const HoyPage = () => {
         const parent = subtask.parent_activity;
         const conflictDates = dailyCapacityConflict?.conflictDates || dailyCapacityConflict?.conflicts?.map(c => c.date) || [];
         const isDailyConflict = Boolean(subtask?.target_date && conflictDates.includes(subtask.target_date));
+        const postponedNote = (subtask?.note && String(subtask.note).trim()) || getStoredPostponeNote(subtask?.id);
         let icon = '📝';
         if (parent.type === 'project') icon = '💻';
         if (parent.type === 'exam' || parent.type === 'quiz') icon = '📚';
@@ -398,42 +456,47 @@ const HoyPage = () => {
                 </div>
 
                 <div className="flex items-center gap-5 text-zinc-400 text-xs font-semibold mb-6">
-                    <div className="flex items-center gap-1.5">
-                        <Calendar size={14} />
-                        {formatDateShort(subtask.target_date)}
-                    </div>
+                    {subtask.status !== 'postponed' && (
+                        <div className="flex items-center gap-1.5">
+                            <Calendar size={14} />
+                            {formatDateShort(subtask.target_date)}
+                        </div>
+                    )}
                     {subtask.estimated_hours && (
-                        isDailyConflict ? (
-                            <span className="flex items-center gap-1">
-                                ⚠️ {subtask.estimated_hours}h estimadas
-                            </span>
-                        ) : (
-                            <div className="flex items-center gap-1.5">
-                                <Clock size={14} />
-                                {subtask.estimated_hours}h estimadas
-                            </div>
-                        )
+                        <div className="flex items-center gap-1.5">
+                            {isDailyConflict ? '⚠️' : <Clock size={14} />}
+                            {subtask.estimated_hours}h estimadas
+                        </div>
                     )}
                 </div>
+
+                {subtask.status === 'postponed' && Boolean(postponedNote && String(postponedNote).trim()) && (
+                    <div className="w-full mb-6 px-4 py-3 rounded-lg bg-[#F8FAFC] border border-dashed border-zinc-300 text-zinc-500 text-sm font-semibold text-center whitespace-pre-wrap">
+                        {String(postponedNote).trim()}
+                    </div>
+                )}
 
                 <div className="flex gap-2">
                     <button
                         onClick={() => handleMarkDone(subtask)}
-                        className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                        disabled={subtask.status === 'done'}
+                        className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-300 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:hover:bg-zinc-300"
                     >
                         <CheckCircle2 size={18} /> Hecha
                     </button>
                     <button
-                        onClick={() => handlePostpone(subtask)}
+                        onClick={() => handleOpenPostpone(subtask)}
                         title="Posponer"
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer"
+                        disabled={subtask.status === 'done'}
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
                     >
                         <Clock size={18} />
                     </button>
                     <button
                         onClick={() => handleOpenReschedule(subtask)}
                         title="Reprogramar"
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer">
+                        disabled={subtask.status === 'done'}
+                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100">
                         <CalendarClock size={18} />
                     </button>
                 </div>
@@ -441,57 +504,124 @@ const HoyPage = () => {
         );
     };
 
-    const renderSuccess = () => (
-        <div className="flex flex-row gap-6 overflow-x-auto pb-8 items-start w-full snap-x">
-            {overdue.length > 0 && (
-                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
-                    <h2 className="text-xl font-bold text-red-600 mb-5 flex items-center gap-2">
-                        Vencidas
-                        <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{overdue.length}</span>
-                    </h2>
-                    <div className="flex flex-col">
-                        {overdue.map(sub => {
-                            const badge = getBadge(sub, { text: 'Vencida', className: 'bg-red-600 text-white' });
-                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                        })}
-                    </div>
-                </section>
-            )}
+    const renderSuccess = () => {
+        const sortByDateAndHours = (a, b) => {
+            const dateA = a.status === 'postponed' ? '9999-12-31' : (a.target_date || '9999-12-31');
+            const dateB = b.status === 'postponed' ? '9999-12-31' : (b.target_date || '9999-12-31');
+            if (dateA !== dateB) return dateA.localeCompare(dateB);
+            const hoursA = Number(a.estimated_hours) || 0;
+            const hoursB = Number(b.estimated_hours) || 0;
+            return hoursA - hoursB;
+        };
 
-            {todayTasks.length > 0 && (
-                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
-                    <h2 className="text-xl font-bold text-blue-500 mb-5 flex items-center gap-2">
-                        Para hoy
-                        <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{todayTasks.length}</span>
-                    </h2>
-                    <div className="flex flex-col">
-                        {todayTasks.map(sub => {
-                            const badge = getBadge(sub, { text: 'Para hoy', className: 'bg-blue-500 text-white' });
-                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                        })}
-                    </div>
-                </section>
-            )}
+        const allSubtasks = [...overdue, ...todayTasks, ...upcoming];
 
-            {upcoming.length > 0 && (
-                <section className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
-                    <h2 className="text-xl font-bold text-zinc-800 mb-5 flex items-center gap-2">
-                        Próximas {daysFilter !== '' ? `(${daysFilter} días)` : ''}
-                        <span className="bg-zinc-200 text-zinc-600 text-xs px-2 py-0.5 rounded-full">{upcoming.length}</span>
-                    </h2>
-                    <div className="flex flex-col">
-                        {upcoming.map(sub => {
-                            const badge = getBadge(sub, { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' });
-                            return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
-                        })}
-                    </div>
-                </section>
-            )}
-        </div>
-    );
+        const doneGrouped = allSubtasks
+            .filter((sub) => sub.status === 'done')
+            .sort(sortByDateAndHours);
+
+        const overdueGrouped = overdue
+            .filter((sub) => sub.status !== 'done' && sub.status !== 'postponed')
+            .sort(sortByDateAndHours);
+
+        const todayGrouped = todayTasks
+            .filter((sub) => sub.target_date === todayStr && sub.status !== 'done' && sub.status !== 'postponed')
+            .sort(sortByDateAndHours);
+
+        const upcomingGrouped = [
+            ...upcoming.filter((sub) => sub.status !== 'done' && sub.status !== 'postponed'),
+            ...allSubtasks.filter((sub) => sub.status === 'postponed')
+        ].sort(sortByDateAndHours);
+
+        const showDoneGroup = statusFilter !== 'Todos';
+
+        const groups = [
+            {
+                key: 'overdue',
+                title: 'Vencidas',
+                titleClass: 'text-red-600',
+                countClass: 'bg-red-600 text-white',
+                items: overdueGrouped,
+            },
+            {
+                key: 'today',
+                title: 'Para Hoy',
+                titleClass: 'text-blue-700',
+                countClass: 'bg-blue-100 text-blue-700',
+                items: todayGrouped,
+            },
+            {
+                key: 'upcoming',
+                title: 'Próximas',
+                titleClass: 'text-zinc-700',
+                countClass: 'bg-zinc-200 text-zinc-600',
+                items: upcomingGrouped,
+            },
+        ];
+
+        if (showDoneGroup) {
+            groups.push({
+                key: 'done',
+                title: 'Completadas',
+                titleClass: 'text-green-700',
+                countClass: 'bg-green-100 text-green-700',
+                items: doneGrouped,
+            });
+        }
+
+        return (
+            <div className="flex flex-row gap-6 overflow-x-auto pb-8 items-start w-full snap-x">
+                {groups.map((group) => {
+                    if (!group.items || group.items.length === 0) return null;
+                    return (
+                        <section key={group.key} className="flex-1 min-w-[340px] bg-zinc-50 rounded-2xl p-5 border border-zinc-200/60 snap-start">
+                            <h2 className={`text-xl font-bold mb-5 flex items-center gap-2 ${group.titleClass}`}>
+                                {group.title}
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${group.countClass}`}>{group.items.length}</span>
+                            </h2>
+                            <div className="flex flex-col">
+                                {group.items.map((sub) => {
+                                    const badge = STATUS_BADGE[sub.status] || { text: 'Pendiente', className: 'bg-zinc-200 text-zinc-600' };
+                                    return <SubtaskCard key={sub.id} subtask={sub} badgeText={badge.text} badgeClassName={badge.className} />;
+                                })}
+                            </div>
+                        </section>
+                    );
+                })}
+            </div>
+        );
+    };
 
     const renderModals = () => (
         <>
+            {/* Modal Posponer con nota opcional */}
+            <Modal
+                isOpen={postponeModal.isOpen}
+                onClose={handleClosePostpone}
+                onConfirm={handlePostponeConfirm}
+                title="Posponer"
+                confirmText="Posponer"
+                cancelText="Cancelar"
+                showCancel={true}
+                isLoading={isPostponing}
+                size="md"
+            >
+                <div className="py-2">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-zinc-700">
+                            Mensaje (opcional)
+                        </label>
+                        <textarea
+                            value={postponeModal.note}
+                            onChange={(e) => setPostponeModal(prev => ({ ...prev, note: e.target.value }))}
+                            rows={4}
+                            placeholder="Escribe una nota sobre por qué la pospones (opcional)"
+                            className="w-full border border-zinc-300 rounded-lg px-4 py-3 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 resize-none"
+                        />
+                    </div>
+                </div>
+            </Modal>
+
             {/* Modal Reprogramar */}
             <Modal
                 isOpen={rescheduleModal.isOpen}

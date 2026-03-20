@@ -2,34 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Settings, Save, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { userService } from '../../services/userService';
-
-const DAILY_CAPACITY_CONFLICT_STORAGE_KEY = 'dailyCapacityOverloadConflict';
-
-const broadcastDailyCapacityConflict = (conflict) => {
-    try {
-        window.dispatchEvent(new CustomEvent('daily-capacity-conflict', { detail: conflict }));
-    } catch {
-        // no-op
-    }
-};
-
-const setDailyCapacityConflict = (conflict) => {
-    try {
-        if (!conflict) {
-            sessionStorage.removeItem(DAILY_CAPACITY_CONFLICT_STORAGE_KEY);
-            broadcastDailyCapacityConflict(null);
-            return;
-        }
-
-        sessionStorage.setItem(DAILY_CAPACITY_CONFLICT_STORAGE_KEY, JSON.stringify({
-            ...conflict,
-            ts: Date.now(),
-        }));
-        broadcastDailyCapacityConflict(conflict);
-    } catch {
-        // no-op
-    }
-};
+import { computeDailyCapacityConflicts, setStoredDailyCapacityConflict } from '../../utils/dailyCapacityConflict';
+import { getActivities } from '../../services/activityService';
 
 function CapacitySettings({ isExpanded }) {
     const [savedCapacity, setSavedCapacity] = useState("6");
@@ -72,12 +46,26 @@ function CapacitySettings({ isExpanded }) {
 
         setIsSaving(true);
         try {
+            // Verificación en frontend: si existen días que superan el límite, no permitir guardar.
+            const activities = await getActivities();
+            const computed = computeDailyCapacityConflicts(activities, hours);
+            if (computed.conflicts && computed.conflicts.length > 0) {
+                setStoredDailyCapacityConflict({
+                    limitHours: hours,
+                    conflicts: computed.conflicts,
+                    conflictDates: computed.conflictDates,
+                    activityIds: computed.activityIds,
+                });
+                setError('Hay actividades que superan ese límite.');
+                return;
+            }
+
             await userService.updateDailyCapacity(hours);
             setSavedCapacity(hours.toString());
             setSuccessMsg("Límite guardado con éxito.");
 
             // Si se guardó bien, limpiar cualquier conflicto anterior
-            setDailyCapacityConflict(null);
+            setStoredDailyCapacityConflict(null);
             setTimeout(() => {
                 setSuccessMsg(null);
                 setIsSettingsOpen(false);
@@ -86,7 +74,7 @@ function CapacitySettings({ isExpanded }) {
             console.error("Error guardando capacidad:", err);
 
             // Por defecto, limpiar conflicto si el error no es de sobrecarga
-            setDailyCapacityConflict(null);
+            setStoredDailyCapacityConflict(null);
 
             // Try to extract conflict info from backend
             const respData = err.response?.data;
@@ -101,7 +89,7 @@ function CapacitySettings({ isExpanded }) {
                 const conflicts = conflict?.conflicts || [];
                 const conflictDates = conflicts.map(c => c.date).filter(Boolean);
 
-                setDailyCapacityConflict({
+                setStoredDailyCapacityConflict({
                     limitHours: hours,
                     conflicts,
                     conflictDates,

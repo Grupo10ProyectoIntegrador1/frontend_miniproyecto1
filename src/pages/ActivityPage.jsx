@@ -14,6 +14,8 @@ import {
 import { Link } from 'react-router-dom';
 import { useActivities } from '../hooks/useActivities';
 import { deleteActivity } from '../services/activityService';
+import { useAuth } from '../context/useAuth';
+import { getStoredDailyCapacityConflict, syncDailyCapacityConflictWithBackend } from '../utils/dailyCapacityConflict';
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -25,7 +27,29 @@ const ACTIVITY_TYPES_MAP = {
 
 const ActivityPage = () => {
     const { activities = [], viewState, reload } = useActivities();
+    const { user, loading: authLoading } = useAuth();
     const [deletingId, setDeletingId] = React.useState(null)
+    const [dailyCapacityConflict, setDailyCapacityConflict] = React.useState(null)
+
+    React.useEffect(() => {
+        const loadStored = () => {
+            setDailyCapacityConflict(getStoredDailyCapacityConflict())
+        }
+
+        const onConflictEvent = (evt) => {
+            setDailyCapacityConflict(evt?.detail || null)
+        }
+
+        loadStored()
+        window.addEventListener('daily-capacity-conflict', onConflictEvent)
+        return () => window.removeEventListener('daily-capacity-conflict', onConflictEvent)
+    }, [])
+
+    const displayName = (() => {
+        const fullName = `${user?.name ?? ''} ${user?.last_name ?? ''}`.trim();
+        if (fullName) return fullName;
+        return 'Estudiante';
+    })();
 
     const handleDelete = async (id) => {
         if (!window.confirm('¿Estás seguro de que deseas eliminar esta actividad?')) return
@@ -33,6 +57,7 @@ const ActivityPage = () => {
         try {
             await deleteActivity(id)
             reload() // Recarga la lista después de eliminar
+            await syncDailyCapacityConflictWithBackend()
         } catch {
             alert('Ocurrió un error al eliminar la actividad. Intenta de nuevo.')
         } finally {
@@ -54,7 +79,7 @@ const ActivityPage = () => {
             <div className="hidden md:flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200 shadow-sm">
                 <div className="text-right">
                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
-                    <span className="font-bold text-sm text-zinc-800">Estudiante</span>
+                    <span className="font-bold text-sm text-zinc-800">{authLoading ? '...' : displayName}</span>
                 </div>
                 <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
                     <UserCircle size={32} strokeWidth={1.5} />
@@ -94,7 +119,37 @@ const ActivityPage = () => {
             {viewState === 'success' && (
                 <div className="flex flex-col gap-4">
                     {activities.map(activity => (
-                        <div key={activity.id} className="bg-white border border-zinc-100 rounded-xl p-5 hover:shadow-sm transition-all duration-300">
+                        <div
+                            key={activity.id}
+                            className={`bg-white border rounded-xl p-5 hover:shadow-sm transition-all duration-300 ${(() => {
+                                const isCompletedActivity = activity?.status === 'done'
+                                    || (
+                                        Number(activity?.total_subtasks) > 0
+                                        && Number(activity?.completed_subtasks) === Number(activity?.total_subtasks)
+                                    )
+
+                                if (isCompletedActivity) {
+                                    return 'border-zinc-100'
+                                }
+
+                                const storedIds = dailyCapacityConflict?.activityIds;
+                                if (Array.isArray(storedIds) && storedIds.includes(activity.id)) {
+                                    return 'border-red-300 bg-red-50'
+                                }
+
+                                const conflictDates = dailyCapacityConflict?.conflictDates || dailyCapacityConflict?.conflicts?.map(c => c.date) || []
+                                if (!Array.isArray(conflictDates) || conflictDates.length === 0) {
+                                    return 'border-zinc-100'
+                                }
+
+                                const subtasks = Array.isArray(activity?.subtasks) ? activity.subtasks : []
+                                const hasConflictSubtask = subtasks.some((s) =>
+                                    Boolean(s?.target_date) && conflictDates.includes(s.target_date) && s.status !== 'done' && s.status !== 'postponed'
+                                )
+
+                                return hasConflictSubtask ? 'border-red-300 bg-red-50' : 'border-zinc-100'
+                            })()}`}
+                        >
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-1">
