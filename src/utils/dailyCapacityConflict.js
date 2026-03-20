@@ -1,6 +1,69 @@
 import { userService } from '../services/userService';
+import { getActivities } from '../services/activityService';
 
 export const DAILY_CAPACITY_CONFLICT_STORAGE_KEY = 'dailyCapacityOverloadConflict';
+
+export const computeDailyCapacityConflicts = (activities, limitHours) => {
+    const hoursLimit = Number(limitHours);
+    if (!Number.isFinite(hoursLimit) || hoursLimit <= 0) {
+        return { conflicts: [], conflictDates: [], activityIds: [] };
+    }
+
+    const dateTotals = new Map(); // dateStr -> { total, activityIds:Set }
+    const safeActivities = Array.isArray(activities) ? activities : [];
+
+    for (const activity of safeActivities) {
+        const activityId = activity?.id;
+        const subtasks = Array.isArray(activity?.subtasks) ? activity.subtasks : [];
+        for (const sub of subtasks) {
+            const status = sub?.status;
+            if (!sub?.target_date) continue;
+            if (status === 'done' || status === 'postponed') continue;
+
+            const est = Number(sub?.estimated_hours);
+            if (!Number.isFinite(est) || est <= 0) continue;
+
+            const key = String(sub.target_date);
+            if (!dateTotals.has(key)) {
+                dateTotals.set(key, { total: 0, activityIds: new Set() });
+            }
+            const bucket = dateTotals.get(key);
+            bucket.total += est;
+            if (activityId !== undefined && activityId !== null) {
+                bucket.activityIds.add(activityId);
+            }
+        }
+    }
+
+    const conflicts = [];
+    const conflictDates = [];
+    const activityIds = new Set();
+
+    for (const [date, info] of dateTotals.entries()) {
+        if (info.total > hoursLimit) {
+            const exceedsBy = info.total - hoursLimit;
+            const ids = Array.from(info.activityIds);
+            conflicts.push({
+                date,
+                planned_hours: info.total,
+                limit_hours: hoursLimit,
+                exceeds_by: exceedsBy,
+                activity_ids: ids,
+            });
+            conflictDates.push(date);
+            ids.forEach((id) => activityIds.add(id));
+        }
+    }
+
+    // Ordenar por fecha para UI más consistente
+    conflicts.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+    return {
+        conflicts,
+        conflictDates,
+        activityIds: Array.from(activityIds),
+    };
+};
 
 export const broadcastDailyCapacityConflict = (conflict) => {
     try {
@@ -53,22 +116,23 @@ export const syncDailyCapacityConflictWithBackend = async () => {
     }
 
     try {
-        await userService.updateDailyCapacity(limitHours);
-        setStoredDailyCapacityConflict(null);
-    } catch (err) {
-        const overloadConflict = err?.response?.data?.errors?.overload_conflict?.[0];
-        if (overloadConflict) {
-            const conflicts = overloadConflict?.conflicts || [];
-            const conflictDates = conflicts.map((c) => c.date).filter(Boolean);
-            setStoredDailyCapacityConflict({
-                limitHours,
-                conflicts,
-                conflictDates,
-            });
+        // Sin tocar backend: recalcular contra las actividades actuales.
+        const activities = await getActivities();
+        const computed = computeDailyCapacityConflicts(activities, limitHours);
+
+        if (!computed.conflicts || computed.conflicts.length === 0) {
+            setStoredDailyCapacityConflict(null);
             return;
         }
 
-        // If backend no longer returns overload conflict details, avoid stale UI conflict.
+        setStoredDailyCapacityConflict({
+            limitHours,
+            conflicts: computed.conflicts,
+            conflictDates: computed.conflictDates,
+            activityIds: computed.activityIds,
+        });
+    } catch (err) {
+        // En caso de error cargando actividades, evita dejar el UI con conflicto stale.
         setStoredDailyCapacityConflict(null);
     }
 };

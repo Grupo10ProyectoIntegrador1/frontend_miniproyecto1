@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 import { useActivities } from '../hooks/useActivities';
 import { deleteActivity } from '../services/activityService';
 import { useAuth } from '../context/useAuth';
-import { syncDailyCapacityConflictWithBackend } from '../utils/dailyCapacityConflict';
+import { getStoredDailyCapacityConflict, syncDailyCapacityConflictWithBackend } from '../utils/dailyCapacityConflict';
 
 const ACTIVITY_TYPES_MAP = {
     'exam': 'Examen',
@@ -29,6 +29,21 @@ const ActivityPage = () => {
     const { activities = [], viewState, reload } = useActivities();
     const { user, loading: authLoading } = useAuth();
     const [deletingId, setDeletingId] = React.useState(null)
+    const [dailyCapacityConflict, setDailyCapacityConflict] = React.useState(null)
+
+    React.useEffect(() => {
+        const loadStored = () => {
+            setDailyCapacityConflict(getStoredDailyCapacityConflict())
+        }
+
+        const onConflictEvent = (evt) => {
+            setDailyCapacityConflict(evt?.detail || null)
+        }
+
+        loadStored()
+        window.addEventListener('daily-capacity-conflict', onConflictEvent)
+        return () => window.removeEventListener('daily-capacity-conflict', onConflictEvent)
+    }, [])
 
     const displayName = (() => {
         const fullName = `${user?.name ?? ''} ${user?.last_name ?? ''}`.trim();
@@ -104,7 +119,37 @@ const ActivityPage = () => {
             {viewState === 'success' && (
                 <div className="flex flex-col gap-4">
                     {activities.map(activity => (
-                        <div key={activity.id} className="bg-white border border-zinc-100 rounded-xl p-5 hover:shadow-sm transition-all duration-300">
+                        <div
+                            key={activity.id}
+                            className={`bg-white border rounded-xl p-5 hover:shadow-sm transition-all duration-300 ${(() => {
+                                const isCompletedActivity = activity?.status === 'done'
+                                    || (
+                                        Number(activity?.total_subtasks) > 0
+                                        && Number(activity?.completed_subtasks) === Number(activity?.total_subtasks)
+                                    )
+
+                                if (isCompletedActivity) {
+                                    return 'border-zinc-100'
+                                }
+
+                                const storedIds = dailyCapacityConflict?.activityIds;
+                                if (Array.isArray(storedIds) && storedIds.includes(activity.id)) {
+                                    return 'border-red-300 bg-red-50'
+                                }
+
+                                const conflictDates = dailyCapacityConflict?.conflictDates || dailyCapacityConflict?.conflicts?.map(c => c.date) || []
+                                if (!Array.isArray(conflictDates) || conflictDates.length === 0) {
+                                    return 'border-zinc-100'
+                                }
+
+                                const subtasks = Array.isArray(activity?.subtasks) ? activity.subtasks : []
+                                const hasConflictSubtask = subtasks.some((s) =>
+                                    Boolean(s?.target_date) && conflictDates.includes(s.target_date) && s.status !== 'done' && s.status !== 'postponed'
+                                )
+
+                                return hasConflictSubtask ? 'border-red-300 bg-red-50' : 'border-zinc-100'
+                            })()}`}
+                        >
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-1">

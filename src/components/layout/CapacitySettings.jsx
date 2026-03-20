@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Settings, Save, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { userService } from '../../services/userService';
-import { setStoredDailyCapacityConflict } from '../../utils/dailyCapacityConflict';
+import { computeDailyCapacityConflicts, setStoredDailyCapacityConflict } from '../../utils/dailyCapacityConflict';
+import { getActivities } from '../../services/activityService';
 
 function CapacitySettings({ isExpanded }) {
     const [savedCapacity, setSavedCapacity] = useState("6");
@@ -45,6 +46,20 @@ function CapacitySettings({ isExpanded }) {
 
         setIsSaving(true);
         try {
+            // Verificación en frontend: si existen días que superan el límite, no permitir guardar.
+            const activities = await getActivities();
+            const computed = computeDailyCapacityConflicts(activities, hours);
+            if (computed.conflicts && computed.conflicts.length > 0) {
+                setStoredDailyCapacityConflict({
+                    limitHours: hours,
+                    conflicts: computed.conflicts,
+                    conflictDates: computed.conflictDates,
+                    activityIds: computed.activityIds,
+                });
+                setError('Hay actividades que superan ese límite.');
+                return;
+            }
+
             await userService.updateDailyCapacity(hours);
             setSavedCapacity(hours.toString());
             setSuccessMsg("Límite guardado con éxito.");

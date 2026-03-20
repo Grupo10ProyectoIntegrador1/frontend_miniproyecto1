@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getTodaySubtasks } from '../services/subtaskService'
-import { getLocalTodayStr } from '../utils/dateUtils'
 
 export const useTodaySubtasks = () => {
     const [viewState, setViewState] = useState('loading')
@@ -11,30 +10,19 @@ export const useTodaySubtasks = () => {
         setViewState('loading')
         try {
             const result = await getTodaySubtasks(filters)
+            const hasAnyItems = result.overdue.length > 0
+                            || result.today.length > 0
+                            || result.upcoming.length > 0
 
-            const todayStr = getLocalTodayStr()
-            const allSubtasks = [...(result?.overdue || []), ...(result?.today || []), ...(result?.upcoming || [])]
+            // When status is 'all' (Estado = 'Todos' in the UI), the Hoy page hides
+            // the 'Completadas' group. If the backend returns only done subtasks,
+            // treat it as empty to avoid rendering a blank success state.
+            const hasVisibleItems = filters.status === 'all'
+                ? [...result.overdue, ...result.today, ...result.upcoming].some((subtask) => subtask?.status !== 'done')
+                : hasAnyItems
 
-            const postponed = allSubtasks.filter((sub) => sub.status === 'postponed')
-            const overdueVisible = (result?.overdue || []).filter(
-                (sub) => sub.status !== 'done' && sub.status !== 'postponed'
-            )
-            const todayVisible = (result?.today || []).filter(
-                (sub) => sub.target_date === todayStr && sub.status !== 'done' && sub.status !== 'postponed'
-            )
-            const upcomingVisible = (result?.upcoming || []).filter(
-                (sub) => sub.status !== 'done' && sub.status !== 'postponed'
-            )
-
-            const hasVisibleInTodos =
-                overdueVisible.length + todayVisible.length + upcomingVisible.length + postponed.length > 0
-
-            const hasAnyFromApi =
-                (result?.overdue || []).length > 0 || (result?.today || []).length > 0 || (result?.upcoming || []).length > 0
-
-            const hasData = filters.status === 'all' ? hasVisibleInTodos : hasAnyFromApi
             setData(result)
-            setViewState(hasData ? 'success' : 'empty')
+            setViewState(hasVisibleItems ? 'success' : 'empty')
         } catch {
             setViewState('error')
         }

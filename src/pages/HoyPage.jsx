@@ -5,6 +5,7 @@ import { updateSubtask } from '../services/subtaskService';
 import { getLocalTodayStr } from '../utils/dateUtils';
 import { parseOverloadError } from '../utils/errorUtils';
 import { DAILY_CAPACITY_CONFLICT_STORAGE_KEY } from '../utils/dailyCapacityConflict';
+import { clearStoredPostponeNote, getStoredPostponeNote, setStoredPostponeNote } from '../utils/postponeNote';
 import Modal from '../components/Modal';
 import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -174,6 +175,9 @@ const HoyPage = () => {
 
         try {
             await updateSubtask(subtask.id, { status: 'done' });
+
+            clearStoredPostponeNote(subtask.id);
+
             await reload();
         } catch (error) {
             const { errorMessage } = parseOverloadError(error, 'Ha ocurrido un error marcando la subtarea como hecha.');
@@ -191,14 +195,19 @@ const HoyPage = () => {
         if (!subtask?.id) return;
 
         const trimmedNote = (postponeModal.note || '').trim();
-        const payload = {
-            status: 'postponed',
-            ...(trimmedNote ? { note: trimmedNote } : {})
-        };
+        const payload = { status: 'postponed' };
 
         setIsPostponing(true);
         try {
             await updateSubtask(subtask.id, payload);
+
+            // El backend actual no soporta `note` en Subtask; persistimos el mensaje localmente.
+            if (trimmedNote) {
+                setStoredPostponeNote(subtask.id, trimmedNote);
+            } else {
+                clearStoredPostponeNote(subtask.id);
+            }
+
             handleClosePostpone();
             reload();
         } catch (error) {
@@ -236,6 +245,8 @@ const HoyPage = () => {
                 // Reprogramar = volver a planificar (no es posponer)
                 status: 'pending'
             });
+
+            clearStoredPostponeNote(rescheduleModal.subtask.id);
 
             // Si todo sale bien
             setAlertModal({
@@ -298,6 +309,8 @@ const HoyPage = () => {
                 // Reducir horas para resolver conflicto mantiene la subtarea planificada
                 status: 'pending'
             });
+
+            clearStoredPostponeNote(reduceModal.subtask.id);
 
             setAlertModal({
                 isOpen: true,
@@ -396,8 +409,8 @@ const HoyPage = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
                     <span className="font-bold text-white block mb-1">Regla de prioridad</span>
-                    En "Todos" se agrupan en este orden: Vencidas, Para Hoy y Próximas.
-                    Si filtras por "Completada", se muestra el grupo Completadas.
+                    Las subtareas se agrupan en este orden: Vencidas, Para Hoy y Próximas.
+                    Si filtras por un estado específico, también se muestran las Completadas.
                     Las postergadas se muestran dentro de Próximas.
                     Dentro de cada grupo se ordenan por fecha objetivo y luego por menor esfuerzo estimado.
                     En caso de empate, se muestra primero la de menor esfuerzo estimado.
@@ -410,6 +423,7 @@ const HoyPage = () => {
         const parent = subtask.parent_activity;
         const conflictDates = dailyCapacityConflict?.conflictDates || dailyCapacityConflict?.conflicts?.map(c => c.date) || [];
         const isDailyConflict = Boolean(subtask?.target_date && conflictDates.includes(subtask.target_date));
+        const postponedNote = (subtask?.note && String(subtask.note).trim()) || getStoredPostponeNote(subtask?.id);
         let icon = '📝';
         if (parent.type === 'project') icon = '💻';
         if (parent.type === 'exam' || parent.type === 'quiz') icon = '📚';
@@ -449,26 +463,18 @@ const HoyPage = () => {
                         </div>
                     )}
                     {subtask.estimated_hours && (
-                        isDailyConflict ? (
-                            <span className="flex items-center gap-1">
-                                ⚠️ {subtask.estimated_hours}h estimadas
-                            </span>
-                        ) : (
-                            <div className="flex items-center gap-1.5">
-                                <Clock size={14} />
-                                {subtask.estimated_hours}h estimadas
-                            </div>
-                        )
+                        <div className="flex items-center gap-1.5">
+                            {isDailyConflict ? '⚠️' : <Clock size={14} />}
+                            {subtask.estimated_hours}h estimadas
+                        </div>
                     )}
                 </div>
 
-                    {Boolean(subtask?.note && String(subtask.note).trim()) && (
-                        <div className="mb-6">
-                            <div className="w-full px-4 py-3 rounded-lg bg-[#F8FAFC] border border-dashed border-zinc-300 text-zinc-500 text-sm font-semibold whitespace-pre-wrap">
-                                {String(subtask.note).trim()}
-                            </div>
-                        </div>
-                    )}
+                {subtask.status === 'postponed' && Boolean(postponedNote && String(postponedNote).trim()) && (
+                    <div className="w-full mb-6 px-4 py-3 rounded-lg bg-[#F8FAFC] border border-dashed border-zinc-300 text-zinc-500 text-sm font-semibold text-center whitespace-pre-wrap">
+                        {String(postponedNote).trim()}
+                    </div>
+                )}
 
                 <div className="flex gap-2">
                     <button
@@ -527,6 +533,8 @@ const HoyPage = () => {
             ...allSubtasks.filter((sub) => sub.status === 'postponed')
         ].sort(sortByDateAndHours);
 
+        const showDoneGroup = statusFilter !== 'Todos';
+
         const groups = [
             {
                 key: 'overdue',
@@ -549,18 +557,17 @@ const HoyPage = () => {
                 countClass: 'bg-zinc-200 text-zinc-600',
                 items: upcomingGrouped,
             },
-            ...(statusFilter === 'Todos'
-                ? []
-                : [
-                    {
-                        key: 'done',
-                        title: 'Completadas',
-                        titleClass: 'text-green-700',
-                        countClass: 'bg-green-100 text-green-700',
-                        items: doneGrouped,
-                    },
-                ]),
         ];
+
+        if (showDoneGroup) {
+            groups.push({
+                key: 'done',
+                title: 'Completadas',
+                titleClass: 'text-green-700',
+                countClass: 'bg-green-100 text-green-700',
+                items: doneGrouped,
+            });
+        }
 
         return (
             <div className="flex flex-row gap-6 overflow-x-auto pb-8 items-start w-full snap-x">

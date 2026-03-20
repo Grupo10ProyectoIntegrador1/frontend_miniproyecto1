@@ -2,99 +2,78 @@ import api from './api'
 import { getActivities } from './activityService'
 import { getLocalTodayStr } from '../utils/dateUtils'
 
-let todayEndpointAvailability = null // null = unknown, true = exists, false = missing
-
-const toSubtaskWithParent = (activity, subtask) => {
-    const parent_activity = {
-        id: activity?.id,
-        title: activity?.title,
-        type: activity?.type,
-        course: activity?.course,
-        weight: activity?.weight,
-        due_date: activity?.due_date,
-    }
-
-    return {
-        ...subtask,
-        parent_activity,
-    }
+const toLocalDate = (dateStr) => {
+    if (!dateStr) return null
+    // Interpretar YYYY-MM-DD como fecha local
+    return new Date(`${dateStr}T00:00:00`)
 }
 
-const buildTodayGroupsFromActivities = (activities = [], params = {}) => {
+const addDays = (dateObj, days) => {
+    const copy = new Date(dateObj)
+    copy.setDate(copy.getDate() + days)
+    return copy
+}
+
+const buildTodaySubtasksFromActivities = (activities, params = {}) => {
     const todayStr = getLocalTodayStr()
-    const courseFilter = params?.course || ''
-    const statusFilter = params?.status || 'all'
-    const days = params?.days === '' || params?.days === undefined ? '' : Number(params?.days)
+    const todayDate = toLocalDate(todayStr)
 
-    const all = (Array.isArray(activities) ? activities : [])
-        .filter((a) => {
-            if (!courseFilter) return true
-            return (a?.course || '') === courseFilter
-        })
-        .flatMap((activity) => {
-            const subtasks = Array.isArray(activity?.subtasks) ? activity.subtasks : []
-            return subtasks.map((st) => toSubtaskWithParent(activity, st))
-        })
+    const daysFilter = params.days !== undefined && params.days !== '' && params.days !== null
+        ? Number(params.days)
+        : null
+    const horizonDate = daysFilter !== null && !Number.isNaN(daysFilter) && todayDate
+        ? addDays(todayDate, Math.max(0, daysFilter))
+        : null
 
-    const withinDays = (dateStr) => {
-        if (days === '' || Number.isNaN(days)) return true
-        if (!dateStr) return false
-        const base = new Date(todayStr + 'T00:00:00')
-        const max = new Date(base)
-        max.setDate(max.getDate() + days)
-        const d = new Date(dateStr + 'T00:00:00')
-        return d <= max
-    }
+    const flattened = (Array.isArray(activities) ? activities : []).flatMap((act) => {
+        const parent_activity = {
+            id: act?.id,
+            title: act?.title,
+            type: act?.type,
+            course: act?.course,
+            weight: act?.weight,
+            due_date: act?.due_date,
+        }
 
-    // Mantener soporte de filtro por status (all/pending/done/postponed/overdue)
-    const filteredByStatus = all.filter((st) => {
-        if (!statusFilter || statusFilter === 'all') return true
-        return st?.status === statusFilter
+        const subtasks = Array.isArray(act?.subtasks) ? act.subtasks : []
+        return subtasks.map((sub) => ({
+            ...sub,
+            parent_activity,
+        }))
     })
 
-    const overdue = []
-    const today = []
-    const upcoming = []
+    const filtered = flattened.filter((sub) => {
+        if (params.course && sub?.parent_activity?.course !== params.course) return false
 
-    for (const st of filteredByStatus) {
-        const target = st?.target_date || null
-        const status = st?.status
+        if (params.status && params.status !== 'all' && sub?.status !== params.status) return false
 
-        // Postergadas se consideran dentro de Próximas
-        if (status === 'postponed') {
-            upcoming.push(st)
+        if (horizonDate && sub?.target_date) {
+            const target = toLocalDate(sub.target_date)
+            // Mantener siempre las de hoy; filtrar hacia adelante por horizonte
+            if (target && sub.target_date !== todayStr && target > horizonDate) return false
+        }
+
+        return true
+    })
+
+    const grouped = { overdue: [], today: [], upcoming: [] }
+    for (const sub of filtered) {
+        const td = sub?.target_date || null
+        if (sub?.status === 'overdue') {
+            grouped.overdue.push(sub)
             continue
         }
 
-        // Completadas: las devolvemos en upcoming para que la UI pueda agruparlas (doneGrouped)
-        // sin crear un cuarto array en el contrato {overdue,today,upcoming}.
-        if (status === 'done') {
-            upcoming.push(st)
+        if (td === todayStr) {
+            grouped.today.push(sub)
             continue
         }
 
-        // Overdue explícitas o por fecha (fallback por si existieran)
-        if (status === 'overdue' || (target && target < todayStr)) {
-            overdue.push(st)
-            continue
-        }
-
-        if (target && target === todayStr) {
-            today.push(st)
-            continue
-        }
-
-        if (target && target > todayStr) {
-            if (withinDays(target)) {
-                upcoming.push(st)
-            }
-            continue
-        }
-
-        // Sin fecha objetivo: no se muestra en Hoy (coincide con comportamiento usual)
+        // Cualquier otra cosa (incluye postponed, done, pending a futuro, sin fecha)
+        grouped.upcoming.push(sub)
     }
 
-    return { overdue, today, upcoming }
+    return grouped
 }
 
 //POST /api/activities/:activityID/subtasks/
@@ -130,21 +109,14 @@ export const getTodaySubtasks = async (params = {}) => {
     const queryStr = query.toString()
     const url = queryStr ? `/subtasks/today/?${queryStr}` : '/subtasks/today/'
 
-    if (todayEndpointAvailability === false) {
-        const activities = await getActivities()
-        return buildTodayGroupsFromActivities(activities, params)
-    }
-
     try {
         const response = await api.get(url)
-        todayEndpointAvailability = true
         return response.data.data  // { overdue: [...], today: [...], upcoming: [...] }
     } catch (err) {
-        const status = err?.response?.status
-        if (status === 404) {
-            todayEndpointAvailability = false
+        // El backend actual no expone /subtasks/today/ -> fallback sin tocar backend.
+        if (err?.response?.status === 404) {
             const activities = await getActivities()
-            return buildTodayGroupsFromActivities(activities, params)
+            return buildTodaySubtasksFromActivities(activities, params)
         }
         throw err
     }
