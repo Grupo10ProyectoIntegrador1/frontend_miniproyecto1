@@ -56,7 +56,7 @@ function CapacitySettings({ isExpanded }) {
                     conflictDates: computed.conflictDates,
                     activityIds: computed.activityIds,
                 });
-                setError('Hay actividades que superan ese límite.');
+                setError('Hay subtareas que superan el límite, reprograma o cambia su capacidad.');
                 return;
             }
 

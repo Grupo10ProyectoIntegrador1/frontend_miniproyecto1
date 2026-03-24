@@ -6,7 +6,7 @@ import logo from '../../assets/bb51bc4eb2882c49a664ff7c04a240151df066fc.png';
 import CapacitySettings from "./CapacitySettings";
 
 const navItems = [
-    { to: '/crear', label: 'Crear Actividad', icon: Calendar },
+    { to: '/crear', label: 'Crear Actividad', icon: Plus },
     { to: '/actividades', label: 'Actividades', icon: ListTodo },
     { to: '/progreso', label: 'Progreso', icon: BarChart2 },
 ]
@@ -62,7 +62,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                 >
                     {({ isActive }) => (
                         <>
-                            <Plus size={20} className={isActive ? 'text-white' : 'text-slate-400 flex-shrink-0'} />
+                            <Calendar size={20} className={isActive ? 'text-white' : 'text-slate-400 flex-shrink-0'} />
                             {isExpanded && <span className="whitespace-nowrap">Hoy</span>}
                         </>
                     )}
