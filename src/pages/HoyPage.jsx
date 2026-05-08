@@ -409,10 +409,8 @@ const HoyPage = () => {
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-96 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
                     <span className="font-bold text-white block mb-1">Regla de prioridad</span>
-                    Las subtareas se agrupan en este orden: Vencidas, Para Hoy y Próximas.
-                    Si filtras por un estado específico, también se muestran las Completadas.
-                    Las postergadas se muestran dentro de Próximas.
-                    Dentro de cada grupo se ordenan por fecha objetivo y luego por menor esfuerzo estimado.
+                    Las subtareas se agrupan en Vencidas, Para hoy y Próximas según su fecha objetivo.
+                    Dentro de cada grupo se ordenan por fecha (más antigua/cercana primero).
                     En caso de empate, se muestra primero la de menor esfuerzo estimado.
                 </div>
             </div>
