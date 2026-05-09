@@ -1,5 +1,4 @@
 import { userService } from '../services/userService';
-import { getActivities } from '../services/activityService';
 
 export const DAILY_CAPACITY_CONFLICT_STORAGE_KEY = 'dailyCapacityOverloadConflict';
 
