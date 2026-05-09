@@ -6,14 +6,20 @@ import logo from '../../assets/bb51bc4eb2882c49a664ff7c04a240151df066fc.png';
 import CapacitySettings from "./CapacitySettings";
 
 const navItems = [
-    { to: '/crear', label: 'Crear Actividad', icon: Calendar },
+    { to: '/crear', label: 'Crear Actividad', icon: Plus },
     { to: '/actividades', label: 'Actividades', icon: ListTodo },
     { to: '/progreso', label: 'Progreso', icon: BarChart2 },
 ]
 
 function Sidebar({ isExpanded, setIsExpanded }) {
-    const { isAuthenticated, logout } = useAuth();
+    const { isAuthenticated, logout, user, loading: authLoading } = useAuth();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    const displayName = (() => {
+        const fullName = `${user?.name ?? ''} ${user?.last_name ?? ''}`.trim();
+        if (fullName) return fullName;
+        return 'Estudiante';
+    })();
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
@@ -56,7 +62,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                 >
                     {({ isActive }) => (
                         <>
-                            <Plus size={20} className={isActive ? 'text-white' : 'text-slate-400 flex-shrink-0'} />
+                            <Calendar size={20} className={isActive ? 'text-white' : 'text-slate-400 flex-shrink-0'} />
                             {isExpanded && <span className="whitespace-nowrap">Hoy</span>}
                         </>
                     )}
@@ -98,7 +104,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                                     <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0">
                                         <User size={20} />
                                     </div>
-                                    <span className="text-[15px] font-medium text-slate-300 truncate">Estudiante</span>
+                                    <span className="text-[15px] font-medium text-slate-300 truncate">{authLoading ? '...' : displayName}</span>
                                 </div>
                                 {isLoggingOut ? (
                                     <Loader2 size={20} className="animate-spin text-slate-400 flex-shrink-0" />
@@ -115,7 +121,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                             </>
                         ) : (
                             <>
-                                <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0 mb-2" title="Perfil de Estudiante">
+                                <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0 mb-2" title={authLoading ? 'Perfil' : `Perfil de ${displayName}`}>
                                     <User size={20} />
                                 </div>
                             </>

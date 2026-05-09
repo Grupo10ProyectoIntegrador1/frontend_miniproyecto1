@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Settings, Save, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { userService } from '../../services/userService';
+import { computeDailyCapacityConflicts, setStoredDailyCapacityConflict } from '../../utils/dailyCapacityConflict';
+import { getActivities } from '../../services/activityService';
 
 function CapacitySettings({ isExpanded }) {
     const [savedCapacity, setSavedCapacity] = useState("6");
@@ -44,15 +46,36 @@ function CapacitySettings({ isExpanded }) {
 
         setIsSaving(true);
         try {
+            // Verificación en frontend: si existen días que superan el límite, no permitir guardar.
+            const activities = await getActivities();
+            const computed = computeDailyCapacityConflicts(activities, hours);
+            if (computed.conflicts && computed.conflicts.length > 0) {
+                setStoredDailyCapacityConflict({
+                    limitHours: hours,
+                    conflicts: computed.conflicts,
+                    conflictDates: computed.conflictDates,
+                    activityIds: computed.activityIds,
+                });
+                setError('Hay subtareas que superan el límite, reprograma o cambia su capacidad.');
+                return;
+            }
+
             await userService.updateDailyCapacity(hours);
             setSavedCapacity(hours.toString());
             setSuccessMsg("Límite guardado con éxito.");
+
+            // Si se guardó bien, limpiar cualquier conflicto anterior
+            setStoredDailyCapacityConflict(null);
             setTimeout(() => {
                 setSuccessMsg(null);
                 setIsSettingsOpen(false);
             }, 2000);
         } catch (err) {
             console.error("Error guardando capacidad:", err);
+
+            // Por defecto, limpiar conflicto si el error no es de sobrecarga
+            setStoredDailyCapacityConflict(null);
+
             // Try to extract conflict info from backend
             const respData = err.response?.data;
             const errors = respData?.errors;
@@ -62,8 +85,17 @@ function CapacitySettings({ isExpanded }) {
                 setError(msg);
             } else if (errors?.overload_conflict) {
                 const conflict = errors.overload_conflict[0];
-                const dates = conflict.conflicts?.map(c => c.date).join(', ') || '';
-                setError(`No puedes reducir: tienes días con más horas planificadas (${dates}).`);
+
+                const conflicts = conflict?.conflicts || [];
+                const conflictDates = conflicts.map(c => c.date).filter(Boolean);
+
+                setStoredDailyCapacityConflict({
+                    limitHours: hours,
+                    conflicts,
+                    conflictDates,
+                });
+
+                setError(`No puedes reducir: tienes días con más de (${hours}) horas planificadas.`);
             } else {
                 setError("Error al guardar. Intenta de nuevo.");
             }

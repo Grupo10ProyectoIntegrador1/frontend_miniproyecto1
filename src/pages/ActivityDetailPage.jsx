@@ -8,6 +8,7 @@ import SubtaskCard from '../components/activities/SubtaskCard'
 import SubtaskForm from '../components/activities/SubtaskForm'
 import Modal from '../components/Modal'
 import { parseOverloadError } from '../utils/errorUtils'
+import { syncDailyCapacityConflictWithBackend } from '../utils/dailyCapacityConflict'
 
 const ACTIVITY_TYPES_MAP = {
   exam: 'Examen',
@@ -170,6 +171,7 @@ function ActivityDetailPage() {
         setDeleting(true)
         try {
           await deleteActivity(id)
+          await syncDailyCapacityConflictWithBackend()
           setModalConfig({
             isOpen: true,
             type: 'success',
