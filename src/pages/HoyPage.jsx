@@ -208,6 +208,7 @@ const HoyPage = () => {
                 clearStoredPostponeNote(subtask.id);
             }
 
+            setIsPostponing(false);
             handleClosePostpone();
             reload();
         } catch (error) {
