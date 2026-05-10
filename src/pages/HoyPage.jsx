@@ -107,7 +107,7 @@ const HoyPage = () => {
                 const unique = [...new Set(activities.map(a => a.course).filter(Boolean))];
                 setCourses(['Todos', ...unique]);
             })
-            .catch(() => { });
+            .catch((error) => { console.error("Error al cargar actividades:", error); });
     }, []);
 
     const handleCourseChange = (value) => {
