@@ -113,6 +113,7 @@ export const getTodaySubtasks = async (params = {}) => {
         const response = await api.get(url)
         return response.data.data  // { overdue: [...], today: [...], upcoming: [...] }
     } catch (err) {
+        console.error("Error en getTodaySubtasks:", err)
         // El backend actual no expone /subtasks/today/ -> fallback sin tocar backend.
         if (err?.response?.status === 404) {
             const activities = await getActivities()

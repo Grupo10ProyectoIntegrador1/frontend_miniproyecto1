@@ -23,7 +23,8 @@ export const useTodaySubtasks = () => {
 
             setData(result)
             setViewState(hasVisibleItems ? 'success' : 'empty')
-        } catch {
+        } catch (error) {
+            console.error("Error al cargar las subtareas de hoy:", error)
             setViewState('error')
         }
     }, [filters])
