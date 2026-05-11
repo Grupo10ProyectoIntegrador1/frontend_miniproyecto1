@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { StreakWidget } from '../components/StreakWidget';
 
 
 const ACTIVITY_TYPES_MAP = {
