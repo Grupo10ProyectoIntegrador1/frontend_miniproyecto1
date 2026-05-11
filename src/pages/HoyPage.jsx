@@ -355,13 +355,16 @@ const HoyPage = () => {
                 <h1 className="text-4xl font-extrabold text-[#0B1525] mb-2 tracking-tight">Hoy</h1>
                 <p className="text-zinc-500 text-sm font-medium">Gestiona y planifica tus compromisos académicos</p>
             </div>
-            <div className="hidden md:flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200/80 shadow-sm">
-                <div className="text-right">
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
-                    <span className="font-bold text-sm text-zinc-800 tracking-tight">{authLoading ? '...' : displayName}</span>
-                </div>
-                <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
-                    <UserCircle size={28} strokeWidth={1.5} />
+            <div className="hidden md:flex flex-col gap-3 items-end">
+                <StreakWidget />
+                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200/80 shadow-sm">
+                    <div className="text-right">
+                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
+                        <span className="font-bold text-sm text-zinc-800 tracking-tight">{authLoading ? '...' : displayName}</span>
+                    </div>
+                    <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
+                        <UserCircle size={28} strokeWidth={1.5} />
+                    </div>
                 </div>
             </div>
         </div>
