@@ -277,14 +277,14 @@ const ActivityPage = () => {
                                 {/* Botones de Acción */}
                                 <div className="flex items-center gap-3">
                                     <Link
-                                        to={`/actividades/${activity.id}`}
+                                        to={`/actividad/${activity.id}`}
                                         className="flex items-center gap-2 px-4 py-2 border border-zinc-300 rounded-lg text-zinc-700 font-medium hover:bg-zinc-50 transition-colors"
                                     >
                                         <Eye size={16} />
                                         Ver
                                     </Link>
                                     <Link
-                                        to={`/editar/${activity.id}`}
+                                        to={`/actividad/${activity.id}?edit=true`}
                                         className="flex items-center gap-2 px-4 py-2 border border-zinc-300 rounded-lg text-zinc-700 font-medium hover:bg-zinc-50 transition-colors"
                                     >
                                         <Pencil size={16} />
