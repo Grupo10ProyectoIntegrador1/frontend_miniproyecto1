@@ -470,28 +470,27 @@ const HoyPage = () => {
                     </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={() => handleMarkDone(subtask)}
                         disabled={subtask.status === 'done'}
-                        className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-300 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:hover:bg-zinc-300"
+                        className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-300 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:hover:bg-zinc-300"
                     >
                         <CheckCircle2 size={18} /> Hecha
                     </button>
                     <button
                         onClick={() => handleOpenPostpone(subtask)}
-                        title="Posponer"
                         disabled={subtask.status === 'done'}
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
+                        className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
                     >
-                        <Clock size={18} />
+                        <Clock size={18} /> Posponer
                     </button>
                     <button
                         onClick={() => handleOpenReschedule(subtask)}
-                        title="Reprogramar"
                         disabled={subtask.status === 'done'}
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100">
-                        <CalendarClock size={18} />
+                        className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
+                    >
+                        <CalendarClock size={18} /> Reprogramar
                     </button>
                 </div>
             </div>
