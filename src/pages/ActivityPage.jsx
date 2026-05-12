@@ -31,6 +31,9 @@ const ActivityPage = () => {
     const { user, loading: authLoading } = useAuth();
     const [deletingId, setDeletingId] = React.useState(null)
     const [dailyCapacityConflict, setDailyCapacityConflict] = React.useState(null)
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [itemsPerPage, setItemsPerPage] = React.useState(5);
+    const [currentPage, setCurrentPage] = React.useState(1);
 
     React.useEffect(() => {
         const loadStored = () => {
@@ -95,134 +98,219 @@ const ActivityPage = () => {
     }
 
     return (
-        <div className="p-8 max-w-5xl mx-auto">
+        <div className="p-8 w-full min-h-screen bg-[#F8FAFC]">
             {renderHeader()}
 
             {viewState !== 'error' && (
-                <div className="flex justify-between items-center mb-6">
-                    <p className="text-zinc-400 text-sm font-medium">
-                        {viewState === 'success' ? `${activities.length} actividades` : '0 actividades'}
-                    </p>
-                    <Link to="/crear" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-sm hover:shadow">
-                        <div className="bg-white/20 rounded-full p-0.5"><Plus size={14} /></div>
-                        Nueva actividad
-                    </Link>
+                <>
+                    <div className="flex flex-col gap-4 mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 relative">
+                                <input
+                                    type="text"
+                                    placeholder="Buscar actividades..."
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="w-full border border-zinc-200 rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-zinc-600">Mostrar:</span>
+                                <select
+                                    value={itemsPerPage}
+                                    onChange={(e) => {
+                                        setItemsPerPage(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    className="border border-zinc-200 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
+                                >
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={15}>15</option>
+                                    <option value={20}>20</option>
+                                </select>
+                            </div>
+
+                            <Link
+                                to="/crear"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-sm hover:shadow"
+                            >
+                                <Plus size={16} />
+                                Nueva actividad
+                            </Link>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {viewState === 'loading' && (
+                <div className="flex flex-col items-center justify-center h-[60vh]">
+                    <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
+                    <p className="text-zinc-500 font-medium">Cargando actividades...</p>
                 </div>
             )}
 
             {viewState === 'success' && (
-                <div className="flex flex-col gap-4">
-                    {activities.map(activity => (
-                        <div
-                            key={activity.id}
-                            className={`bg-white border rounded-xl p-5 hover:shadow-sm transition-all duration-300 ${(() => {
-                                const isCompletedActivity = activity?.status === 'done'
-                                    || (
-                                        Number(activity?.total_subtasks) > 0
-                                        && Number(activity?.completed_subtasks) === Number(activity?.total_subtasks)
-                                    )
-
-                                if (isCompletedActivity) {
-                                    return 'border-zinc-100'
-                                }
-
-                                const storedIds = dailyCapacityConflict?.activityIds;
-                                if (Array.isArray(storedIds) && storedIds.includes(activity.id)) {
-                                    return 'border-red-300 bg-red-50'
-                                }
-
-                                const conflictDates = dailyCapacityConflict?.conflictDates || dailyCapacityConflict?.conflicts?.map(c => c.date) || []
-                                if (!Array.isArray(conflictDates) || conflictDates.length === 0) {
-                                    return 'border-zinc-100'
-                                }
-
-                                const subtasks = Array.isArray(activity?.subtasks) ? activity.subtasks : []
-                                const hasConflictSubtask = subtasks.some((s) =>
-                                    Boolean(s?.target_date) && conflictDates.includes(s.target_date) && s.status !== 'done' && s.status !== 'postponed'
-                                )
-
-                                return hasConflictSubtask ? 'border-red-300 bg-red-50' : 'border-zinc-100'
-                            })()}`}
-                        >
-                            <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <h3 className="text-base font-bold text-zinc-900">{activity.title}</h3>
-                                        {activity.course && (
-                                            <span className="text-zinc-400 text-xs font-medium bg-zinc-50 px-2 py-0.5 rounded border border-zinc-100">
-                                                {activity.course}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center gap-4 text-zinc-400 text-xs mt-3">
-                                        <span className="bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded font-bold uppercase text-[10px]">
-                                            {ACTIVITY_TYPES_MAP[activity.type] || activity.type}
-                                        </span>
-                                        <div className="flex items-center gap-1">
-                                            <Calendar size={14} />
-                                            <span>Límite: {activity.due_date}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="text-xs font-bold text-zinc-400 bg-zinc-50 px-2 py-1 rounded-full border border-zinc-100">
-                                    {activity.completed_subtasks || 0} / {activity.total_subtasks || 0}
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-6 pt-4 border-t border-zinc-50">
-                                <Link
-                                    to={`/actividad/${activity.id}`}
-                                    className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-blue-600 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg"
-                                >
-                                    <Eye size={14} /> Ver
-                                </Link>
-                                <Link
-                                    to={`/actividad/${activity.id}?edit=true`}
-                                    className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg"
-                                >
-                                    <Pencil size={14} /> Editar
-                                </Link>
-                                <button
-                                    onClick={() => handleDelete(activity.id)}
-                                    disabled={deletingId === activity.id}
-                                    className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border border-zinc-200 px-3 py-1.5 rounded-lg disabled:opacity-50"
-                                >
-                                    <Trash2 size={14} />
-                                    {deletingId === activity.id ? 'Eliminando...' : 'Eliminar'}
-                                </button>
-                            </div>
+                <>
+                    {filteredActivities.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-[40vh] text-center">
+                            <BookOpen size={48} className="text-zinc-300 mb-4" />
+                            <p className="text-zinc-500 font-medium">No se encontraron actividades</p>
                         </div>
-                    ))}
-                </div>
-            )}
+                    ) : (
+                        <>
+                            <div className="flex flex-col gap-2 mb-6">
+                                {paginatedActivities.map((activity) => {
+                                    const statusBadge = getStatusBadge(activity);
+                                    const isConflict = (() => {
+                                        const storedIds = dailyCapacityConflict?.activityIds;
+                                        if (Array.isArray(storedIds) && storedIds.includes(activity.id)) {
+                                            return true;
+                                        }
 
-            {viewState === 'empty' && (
-                <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
-                    <BookOpen className="text-zinc-200 mb-6" size={64} strokeWidth={1.5} />
-                    <h3 className="text-xl font-bold text-zinc-900 mb-2">No tienes actividades</h3>
-                    <p className="text-zinc-500 mb-8 max-w-xs">¿Deseas crear tu primera actividad?</p>
-                    <Link to="/crear" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg hover:shadow-xl active:scale-95">
-                        Crear actividad
-                    </Link>
-                </div>
+                                        const conflictDates = dailyCapacityConflict?.conflictDates ||
+                                            dailyCapacityConflict?.conflicts?.map(c => c.date) || [];
+                                        if (!Array.isArray(conflictDates) || conflictDates.length === 0) {
+                                            return false;
+                                        }
+
+                                        const subtasks = Array.isArray(activity?.subtasks) ? activity.subtasks : [];
+                                        return subtasks.some((s) =>
+                                            Boolean(s?.target_date) &&
+                                            conflictDates.includes(s.target_date) &&
+                                            s.status !== 'done' &&
+                                            s.status !== 'postponed'
+                                        );
+                                    })();
+
+                                    return (
+                                        <div
+                                            key={activity.id}
+                                            className={`bg-white border rounded-lg p-4 hover:shadow-md transition-all duration-300 flex items-center justify-between ${
+                                                isConflict ? 'border-red-300 bg-red-50' : 'border-zinc-200'
+                                            }`}
+                                        >
+                                            <div className="flex-1 flex items-center gap-4">
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="text-sm font-bold text-zinc-900 truncate">
+                                                        {activity.title}
+                                                    </h3>
+                                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                        <span className="text-xs font-bold uppercase bg-zinc-100 text-zinc-700 px-2 py-1 rounded border border-zinc-200">
+                                                            {ACTIVITY_TYPES_MAP[activity.type] || activity.type}
+                                                        </span>
+                                                        <span
+                                                            className={`text-xs font-semibold px-2 py-1 rounded border ${statusBadge.className}`}
+                                                        >
+                                                            {statusBadge.text}
+                                                        </span>
+                                                        {activity.course && (
+                                                            <span className="text-xs text-zinc-500 font-medium">
+                                                                {activity.course}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-right ml-4">
+                                                    <div className="text-xs text-zinc-500 font-medium mb-1">
+                                                        {activity.due_date && (
+                                                            <>
+                                                                <Calendar size={12} className="inline mr-1" />
+                                                                {activity.due_date}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right ml-6 min-w-fit">
+                                                <div className="text-xs text-zinc-600 font-bold mb-2">
+                                                    {activity.completed_subtasks || 0}/{activity.total_subtasks || 0} tareas
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Link
+                                                        to={`/actividad/${activity.id}`}
+                                                        className="text-xs font-bold text-zinc-600 hover:text-blue-600 transition-colors px-3 py-1.5 border border-zinc-200 rounded-lg flex items-center gap-1"
+                                                    >
+                                                        <Eye size={14} />
+                                                        Ver
+                                                    </Link>
+                                                    <Link
+                                                        to={`/actividad/${activity.id}?edit=true`}
+                                                        className="text-xs font-bold text-zinc-600 hover:text-zinc-900 transition-colors px-3 py-1.5 border border-zinc-200 rounded-lg flex items-center gap-1"
+                                                    >
+                                                        <Pencil size={14} />
+                                                        Editar
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => handleDelete(activity.id)}
+                                                        disabled={deletingId === activity.id}
+                                                        className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors px-3 py-1.5 border border-red-200 rounded-lg flex items-center gap-1 disabled:opacity-50"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-200">
+                                    <p className="text-xs text-zinc-500 font-medium">
+                                        Mostrando {startIdx + 1} a {Math.min(startIdx + itemsPerPage, filteredActivities.length)} de {filteredActivities.length} actividades
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                            className="text-xs font-bold text-zinc-600 hover:text-zinc-900 disabled:text-zinc-300 px-3 py-1.5 border border-zinc-200 rounded-lg transition-colors"
+                                        >
+                                            ← Previous
+                                        </button>
+
+                                        <div className="flex items-center gap-1">
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => setCurrentPage(page)}
+                                                    className={`text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors ${
+                                                        currentPage === page
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
+                                                    }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="text-xs font-bold text-zinc-600 hover:text-zinc-900 disabled:text-zinc-300 px-3 py-1.5 border border-zinc-200 rounded-lg transition-colors"
+                                        >
+                                            Next →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </>
             )}
 
             {viewState === 'error' && (
-                <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in duration-500">
-                    <div className="w-48 h-48 bg-zinc-50 rounded-full flex items-center justify-center mb-8 border border-zinc-100">
-                        <AlertCircle size={80} className="text-zinc-300" strokeWidth={1} />
-                    </div>
-                    <p className="text-zinc-500 text-lg font-medium max-w-sm leading-relaxed">
-                        Ha ocurrido un error cargando las actividades, . <br />
-                        <span
-                            className="text-blue-600 cursor-pointer hover:underline"
-                            onClick={() => window.location.reload()}
-                        >
-                            intentelo de nuevo
-                        </span>
-                    </p>
+                <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+                    <AlertCircle size={64} className="text-zinc-300 mb-4" />
+                    <p className="text-zinc-500 font-medium">Ocurrió un error al cargar las actividades</p>
                 </div>
             )}
         </div>
