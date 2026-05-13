@@ -427,7 +427,7 @@ const HoyPage = () => {
             <div className={`rounded-2xl p-5 hover:shadow-sm transition-all shadow-sm mb-4 ${
                 isDailyConflict
                     ? 'bg-red-50 border-2 border-red-600'
-                    : 'bg-white border border-zinc-100'
+                    : 'bg-white border border-zinc-300'
             }`}>
                 <div className="flex justify-between items-start mb-4">
                     <div>
