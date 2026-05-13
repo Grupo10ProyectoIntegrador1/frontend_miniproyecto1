@@ -6,7 +6,7 @@ export const StreakWidget = () => {
 
     if (loading) {
         return (
-            <div className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-center w-40 h-16">
+            <div className="bg-white rounded-2xl shadow-md p-6 flex items-center justify-center w-56 h-24">
                 <Loader2 size={20} className="animate-spin text-slate-400" />
             </div>
         );
@@ -16,14 +16,16 @@ export const StreakWidget = () => {
     const isEmpty = days === 0;
 
     return (
-        <div className={`rounded-2xl shadow-md p-4 flex items-center gap-3 ${isEmpty ? 'bg-white' : 'bg-white'}`}>
-            <div className={`flex-shrink-0 ${isEmpty ? 'text-slate-400' : 'text-orange-500'}`}>
-                <Flame size={24} fill={isEmpty ? 'none' : 'currentColor'} />
-            </div>
-            <div className="flex flex-col">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Racha</span>
-                <span className={`text-sm font-bold ${isEmpty ? 'text-slate-600' : 'text-orange-600'}`}>
-                    {isEmpty ? '¡Comienza!' : `${days} ${days === 1 ? 'día' : 'días'}`}
+        <div className="bg-white rounded-2xl shadow-md p-6 flex items-center justify-center w-45 h-22">
+            <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-2">
+                    <div className={`${isEmpty ? 'text-slate-400' : 'text-orange-500'}`}>
+                        <Flame size={24} fill={isEmpty ? 'none' : 'currentColor'} />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Racha</span>
+                </div>
+                <span className={`text-base font-bold text-center ${isEmpty ? 'text-slate-700' : 'text-orange-600'}`}>
+                    {isEmpty ? '¡Completa una subtarea!' : `${days} ${days === 1 ? 'día' : 'días'}`}
                 </span>
             </div>
         </div>

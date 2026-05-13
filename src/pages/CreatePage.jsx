@@ -236,7 +236,7 @@ function CreatePage() {
 
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-sm text-gray-700 font-medium">
-                Peso <span className="text-gray-400 font-normal">(opcional)</span>
+                Porcentaje <span className="text-gray-400 font-normal">(opcional)</span>
               </label>
               <input
                 type="number"
