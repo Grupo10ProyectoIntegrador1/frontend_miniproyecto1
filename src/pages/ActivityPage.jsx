@@ -9,7 +9,8 @@ import {
     Loader2,
     BookOpen,
     AlertCircle,
-    LayoutList
+    LayoutList,
+    HelpCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useActivities } from '../hooks/useActivities';
@@ -131,8 +132,24 @@ const ActivityPage = () => {
                     </p>
                 </div>
             </div>
-            <div className="hidden md:flex">
-                <StreakWidget />
+            <div className="hidden md:flex flex-col items-end gap-3">
+                <div>
+                    <StreakWidget />
+                </div>
+                <div className="relative group">
+                    <button className="flex items-center gap-1.5 justify-center text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors">
+                        <HelpCircle size={16} />
+                        ¿Cómo se ordena?
+                    </button>
+                    <div className="absolute right-0 top-full mt-2 w-72 bg-zinc-800 text-zinc-200 text-xs rounded-xl p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none leading-relaxed">
+                        <span className="font-bold text-white block mb-2">Estados de actividades</span>
+                        <div className="space-y-1.5">
+                            <div><span className="font-semibold text-white">Pendiente:</span> Tiene subtareas sin completar y su fecha límite aún no ha vencido.</div>
+                            <div><span className="font-semibold text-white">Completada:</span> Todas sus subtareas han sido completadas.</div>
+                            <div><span className="font-semibold text-white">Vencida:</span> Su fecha límite ya ha pasado.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
