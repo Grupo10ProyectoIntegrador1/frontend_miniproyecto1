@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     CheckCircle2,
     AlertCircle,
@@ -26,6 +26,8 @@ const ACTIVITY_TYPES_MAP = {
 const ProgressPage = () => {
     const { activities, viewState, stats } = useActivities();
     const { user, loading: authLoading } = useAuth();
+    const [itemsPerPage, setItemsPerPage] = useState(4);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const getProgressColor = (percentage) => {
         const clamped = Math.max(0, Math.min(100, Number(percentage) || 0));
@@ -151,9 +153,13 @@ const ProgressPage = () => {
     const progress = Math.max(0, Math.min(100, stats.percentage));
     const dashOffset = circumference * (1 - progress / 100);
 
+    const totalPages = Math.ceil(activities.length / itemsPerPage);
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const paginatedActivities = activities.slice(startIdx, startIdx + itemsPerPage);
+
     if (viewState === 'loading') {
         return (
-            <div className="p-8 max-w-5xl mx-auto">
+            <div className="p-8 w-full">
                 {renderHeader()}
                 <div className="flex flex-col items-center justify-center h-[60vh]">
                     <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
@@ -164,7 +170,7 @@ const ProgressPage = () => {
     }
 
     return (
-        <div className="p-8 max-w-5xl mx-auto">
+        <div className="p-8 w-full">
             {renderHeader()}
 
             <div className="flex justify-between items-center mb-6">
@@ -183,41 +189,96 @@ const ProgressPage = () => {
             {renderProgressCard(viewState)}
 
             {viewState === 'success' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {activities.map(activity => (
-                        <div key={activity.id} className="bg-white border border-zinc-100 rounded-xl p-6 hover:shadow-md transition-all duration-300">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="text-lg font-bold text-zinc-900">{activity.title || activity.name}</h3>
-                                    <p className="text-zinc-400 text-xs font-medium uppercase tracking-tight">{activity.course}</p>
-                                </div>
-                                <span className="bg-zinc-50 text-zinc-500 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded border border-zinc-100 font-bold">
-                                    {ACTIVITY_TYPES_MAP[activity.type] || activity.type}
-                                </span>
-                            </div>
-                            <p className="text-zinc-500 text-sm mb-2 font-medium">{(activity.completed || 0)}/{(activity.total || 0)} tareas</p>
-                            {(activity.total || 0) > 0 ? (
-                                <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden mb-4">
-                                    <div
-                                        className="h-full transition-all duration-1000"
-                                        style={{
-                                            width: `${(activity.completed / activity.total) * 100}%`,
-                                            backgroundColor: getProgressColor((activity.completed / activity.total) * 100),
-                                        }}
-                                    ></div>
-                                </div>
-                            ) : (
-                                <div className="w-full mb-4 px-4 py-3 rounded-lg bg-[#F8FAFC] border border-dashed border-zinc-300 text-zinc-500 text-sm font-semibold text-center">
-                                    Sin tareas asignadas
-                                </div>
-                            )}
-                            <Link to={`/actividad/${activity.id}`} className="text-zinc-500 hover:text-blue-600 text-xs font-bold flex items-center gap-1.5 transition-colors group">
-                                <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                                Ver detalle
-                            </Link>
+                <>
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-zinc-600">Mostrar:</span>
+                            <select
+                                value={itemsPerPage}
+                                onChange={(e) => {
+                                    setItemsPerPage(Number(e.target.value));
+                                    setCurrentPage(1);
+                                }}
+                                className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
+                            >
+                                <option value={4}>4</option>
+                                <option value={6}>6</option>
+                                <option value={8}>8</option>
+                                <option value={10}>10</option>
+                            </select>
                         </div>
-                    ))}
-                </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {paginatedActivities.map(activity => (
+                            <div key={activity.id} className="bg-white border border-zinc-100 rounded-xl p-6 hover:shadow-md transition-all duration-300">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-zinc-900">{activity.title || activity.name}</h3>
+                                        <p className="text-zinc-400 text-xs font-medium uppercase tracking-tight">{activity.course}</p>
+                                    </div>
+                                    <span className="bg-zinc-50 text-zinc-500 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded border border-zinc-100 font-bold">
+                                        {ACTIVITY_TYPES_MAP[activity.type] || activity.type}
+                                    </span>
+                                </div>
+                                <p className="text-zinc-500 text-sm mb-2 font-medium">{(activity.completed || 0)}/{(activity.total || 0)} tareas</p>
+                                {(activity.total || 0) > 0 ? (
+                                    <div className="w-full bg-zinc-100 h-2 rounded-full overflow-hidden mb-4">
+                                        <div
+                                            className="h-full transition-all duration-1000"
+                                            style={{
+                                                width: `${(activity.completed / activity.total) * 100}%`,
+                                                backgroundColor: getProgressColor((activity.completed / activity.total) * 100),
+                                            }}
+                                        ></div>
+                                    </div>
+                                ) : (
+                                    <div className="w-full mb-4 px-4 py-3 rounded-lg bg-[#F8FAFC] border border-dashed border-zinc-300 text-zinc-500 text-sm font-semibold text-center">
+                                        Sin tareas asignadas
+                                    </div>
+                                )}
+                                <Link to={`/actividad/${activity.id}`} className="text-zinc-500 hover:text-blue-600 text-xs font-bold flex items-center gap-1.5 transition-colors group">
+                                    <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                    Ver detalle
+                                </Link>
+                            </div>
+                        ))}
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 mt-8">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-2 border border-zinc-200 rounded-lg text-sm font-medium disabled:opacity-50"
+                            >
+                                Anterior
+                            </button>
+                            <div className="flex gap-1">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                            currentPage === page
+                                                ? 'bg-blue-600 text-white'
+                                                : 'border border-zinc-200 hover:bg-zinc-50'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-2 border border-zinc-200 rounded-lg text-sm font-medium disabled:opacity-50"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
 
             {viewState === 'empty' && (
