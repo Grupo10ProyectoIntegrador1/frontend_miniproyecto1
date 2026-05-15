@@ -141,9 +141,10 @@ function CapacitySettings({ isExpanded }) {
 
                             {/* Input */}
                             <div className="flex flex-col gap-1">
-                                <label className="text-[#CBD5E1] text-[11px] font-semibold px-0.5">Límite Diario</label>
+                                <label htmlFor="daily-limit" className="text-[#CBD5E1] text-[11px] font-semibold px-0.5">Límite Diario</label>
                                 <div className="flex items-center gap-1.5">
                                     <input
+                                        id="daily-limit"
                                         type="text"
                                         value={inputCapacity}
                                         onChange={(e) => setInputCapacity(e.target.value)}
@@ -171,7 +172,7 @@ function CapacitySettings({ isExpanded }) {
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving || isLoading}
-                                className="flex justify-center items-center gap-1.5 w-full bg-[#3B82F6] hover:bg-blue-600 active:bg-blue-700 text-white text-[12px] font-bold py-1.5 rounded-lg transition-all shadow-sm disabled:opacity-50"
+                                className="flex justify-center items-center gap-1.5 w-full bg-[#0B64F4] hover:bg-blue-600 active:bg-blue-700 text-white text-[12px] font-bold py-1.5 rounded-lg transition-all shadow-sm disabled:opacity-50"
                             >
                                 {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                                 Guardar
