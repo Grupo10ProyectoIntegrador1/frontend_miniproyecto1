@@ -363,9 +363,10 @@ const HoyPage = () => {
 
     const renderFilters = () => (
         <div className="flex flex-wrap items-end gap-6 mb-10 pb-6 border-b border-zinc-100">
-            <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-zinc-500">Curso</label>
+            <div htmlFor="course-filter" className="flex flex-col gap-1.5">
+                <label htmlFor="course-filter" className="text-xs font-semibold text-zinc-500">Curso</label>
                 <select
+                    id="course-filter"
                     value={courseFilter}
                     onChange={(e) => handleCourseChange(e.target.value)}
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
@@ -374,8 +375,9 @@ const HoyPage = () => {
                 </select>
             </div>
             <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-zinc-500">Estado</label>
+                <label htmlFor="status-filter" className="text-xs font-semibold text-zinc-500">Estado</label>
                 <select
+                    id="status-filter"
                     value={statusFilter}
                     onChange={(e) => handleStatusChange(e.target.value)}
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
@@ -388,8 +390,9 @@ const HoyPage = () => {
                 </select>
             </div>
             <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-zinc-500">Días</label>
+                <label htmlFor="days-filter" className="text-xs font-semibold text-zinc-500">Días</label>
                 <input
+                    id="days-filter"
                     type="number"
                     value={daysFilter}
                     onChange={(e) => handleDaysChange(e.target.value === '' ? '' : Number(e.target.value))}
@@ -399,7 +402,10 @@ const HoyPage = () => {
                 />
             </div>
             <div className="ml-auto relative group mb-3">
-                <button className="flex items-center gap-1.5 justify-center text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors">
+                <button 
+                    type="button"
+                    aria-label="Ver ayuda sobre cómo se ordenan las subtareas"
+                    className="flex items-center gap-1.5 justify-center text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors">
                     <HelpCircle size={16} />
                     ¿Cómo se ordena?
                 </button>
@@ -805,7 +811,7 @@ const HoyPage = () => {
                             <p className="font-medium text-zinc-500 text-lg mb-6">
                                 No hay tareas programadas.
                             </p>
-                            <Link to="/crear" className="bg-[#3b82f6] hover:bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">
+                            <Link to="/crear" className="bg-[#0B64F4] hover:bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">
                                 Crear actividad
                             </Link>
                         </div>

@@ -54,7 +54,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                     className={({ isActive }) =>
                         `flex items-center rounded-xl text-[15px] font-medium transition-all ${isExpanded ? 'gap-4 px-4 py-3' : 'justify-center p-3'
                         } ${isActive
-                            ? 'bg-[#3b82f6] text-white shadow-md'
+                            ? 'bg-[#0B64F4] text-white shadow-md'
                             : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
                         }`
                     }
