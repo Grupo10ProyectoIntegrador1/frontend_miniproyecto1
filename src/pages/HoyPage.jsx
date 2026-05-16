@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import { UserCircle, AlertCircle, AlertTriangle, HelpCircle, Calendar, Clock, CheckCircle2, CalendarClock, Loader2, Coffee, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
+import { StreakWidget } from '../components/StreakWidget';
 
 
 const ACTIVITY_TYPES_MAP = {
@@ -354,23 +355,18 @@ const HoyPage = () => {
                 <h1 className="text-4xl font-extrabold text-[#0B1525] mb-2 tracking-tight">Hoy</h1>
                 <p className="text-zinc-500 text-sm font-medium">Gestiona y planifica tus compromisos académicos</p>
             </div>
-            <div className="hidden md:flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-zinc-200/80 shadow-sm">
-                <div className="text-right">
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Perfil</p>
-                    <span className="font-bold text-sm text-zinc-800 tracking-tight">{authLoading ? '...' : displayName}</span>
-                </div>
-                <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-200">
-                    <UserCircle size={28} strokeWidth={1.5} />
-                </div>
+            <div className="hidden md:flex">
+                <StreakWidget />
             </div>
         </div>
     );
 
     const renderFilters = () => (
         <div className="flex flex-wrap items-end gap-6 mb-10 pb-6 border-b border-zinc-100">
-            <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-zinc-500">Curso</label>
+            <div htmlFor="course-filter" className="flex flex-col gap-1.5">
+                <label htmlFor="course-filter" className="text-xs font-semibold text-zinc-500">Curso</label>
                 <select
+                    id="course-filter"
                     value={courseFilter}
                     onChange={(e) => handleCourseChange(e.target.value)}
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
@@ -379,8 +375,9 @@ const HoyPage = () => {
                 </select>
             </div>
             <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-zinc-500">Estado</label>
+                <label htmlFor="status-filter" className="text-xs font-semibold text-zinc-500">Estado</label>
                 <select
+                    id="status-filter"
                     value={statusFilter}
                     onChange={(e) => handleStatusChange(e.target.value)}
                     className="border border-zinc-200 rounded-lg px-3 py-2 text-sm font-medium text-zinc-800 outline-none focus:border-blue-500 bg-white"
@@ -393,8 +390,9 @@ const HoyPage = () => {
                 </select>
             </div>
             <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-zinc-500">Días</label>
+                <label htmlFor="days-filter" className="text-xs font-semibold text-zinc-500">Días</label>
                 <input
+                    id="days-filter"
                     type="number"
                     value={daysFilter}
                     onChange={(e) => handleDaysChange(e.target.value === '' ? '' : Number(e.target.value))}
@@ -404,7 +402,10 @@ const HoyPage = () => {
                 />
             </div>
             <div className="ml-auto relative group mb-3">
-                <button className="flex items-center gap-1.5 justify-center text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors">
+                <button 
+                    type="button"
+                    aria-label="Ver ayuda sobre cómo se ordenan las subtareas"
+                    className="flex items-center gap-1.5 justify-center text-blue-500 text-sm font-semibold hover:text-blue-600 transition-colors">
                     <HelpCircle size={16} />
                     ¿Cómo se ordena?
                 </button>
@@ -432,7 +433,7 @@ const HoyPage = () => {
             <div className={`rounded-2xl p-5 hover:shadow-sm transition-all shadow-sm mb-4 ${
                 isDailyConflict
                     ? 'bg-red-50 border-2 border-red-600'
-                    : 'bg-white border border-zinc-100'
+                    : 'bg-white border border-zinc-300'
             }`}>
                 <div className="flex justify-between items-start mb-4">
                     <div>
@@ -475,28 +476,27 @@ const HoyPage = () => {
                     </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={() => handleMarkDone(subtask)}
                         disabled={subtask.status === 'done'}
-                        className="flex-1 max-w-[160px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-300 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:hover:bg-zinc-300"
+                        className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-300 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:hover:bg-zinc-300"
                     >
                         <CheckCircle2 size={18} /> Hecha
                     </button>
                     <button
                         onClick={() => handleOpenPostpone(subtask)}
-                        title="Posponer"
                         disabled={subtask.status === 'done'}
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
+                        className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
                     >
-                        <Clock size={18} />
+                        <Clock size={18} /> Posponer
                     </button>
                     <button
                         onClick={() => handleOpenReschedule(subtask)}
-                        title="Reprogramar"
                         disabled={subtask.status === 'done'}
-                        className="w-14 flex flex-shrink-0 items-center justify-center bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100">
-                        <CalendarClock size={18} />
+                        className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-sm font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:bg-zinc-100 disabled:text-zinc-400 disabled:border-zinc-200 disabled:cursor-not-allowed disabled:hover:bg-zinc-100"
+                    >
+                        <CalendarClock size={18} /> Reprogramar
                     </button>
                 </div>
             </div>
@@ -810,7 +810,7 @@ const HoyPage = () => {
                             <p className="font-medium text-zinc-500 text-lg mb-6">
                                 No hay tareas programadas.
                             </p>
-                            <Link to="/crear" className="bg-[#3b82f6] hover:bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">
+                            <Link to="/crear" className="bg-[#0B64F4] hover:bg-blue-600 text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">
                                 Crear actividad
                             </Link>
                         </div>

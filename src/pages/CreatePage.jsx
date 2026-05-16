@@ -159,8 +159,9 @@ function CreatePage() {
 
           {/* Título */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-700 font-medium">Título *</label>
+            <label htmlFor="activity-title" className="text-sm text-gray-700 font-medium">Título *</label>
             <input
+              id="activity-title"
               type="text"
               name="title"
               value={form.title}
@@ -176,9 +177,10 @@ function CreatePage() {
 
           {/* Tipo */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-700 font-medium">Tipo *</label>
+            <label htmlFor="activity-type" className="text-sm text-gray-700 font-medium">Tipo *</label>
             <div className="relative">
               <select
+                id="activity-type"
                 name="type"
                 value={form.type}
                 onChange={handleChange}
@@ -201,10 +203,11 @@ function CreatePage() {
 
           {/* Curso */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-700 font-medium">
+            <label htmlFor="activity-course" className="text-sm text-gray-700 font-medium">
               Curso <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <input
+              id="activity-course"
               type="text"
               name="course"
               value={form.course}
@@ -220,8 +223,9 @@ function CreatePage() {
           {/* Fecha y Peso en la misma fila */}
           <div className="flex gap-4">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm text-gray-700 font-medium">Fecha límite *</label>
+              <label htmlFor="activity-due-date" className="text-sm text-gray-700 font-medium">Fecha límite *</label>
               <input
+                id="activity-due-date"
                 type="date"
                 name="due_date"
                 value={form.due_date}
@@ -235,10 +239,11 @@ function CreatePage() {
             </div>
 
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm text-gray-700 font-medium">
+              <label htmlFor="activity-weight" className="text-sm text-gray-700 font-medium">
                 Peso <span className="text-gray-400 font-normal">(opcional)</span>
               </label>
               <input
+                id="activity-weight"
                 type="number"
                 name="weight"
                 value={form.weight}

@@ -54,7 +54,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                     className={({ isActive }) =>
                         `flex items-center rounded-xl text-[15px] font-medium transition-all ${isExpanded ? 'gap-4 px-4 py-3' : 'justify-center p-3'
                         } ${isActive
-                            ? 'bg-[#3b82f6] text-white shadow-md'
+                            ? 'bg-[#0B64F4] text-white shadow-md'
                             : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
                         }`
                     }
@@ -77,7 +77,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                             className={({ isActive }) =>
                                 `flex items-center rounded-xl text-[15px] font-medium transition-all ${isExpanded ? 'gap-4 px-4 py-3' : 'justify-center p-3'
                                 } ${isActive
-                                    ? 'bg-[#3b82f6] text-white shadow-md'
+                                    ? 'bg-[#0B64F4] text-white shadow-md'
                                     : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
                                 }`
                             }
@@ -101,7 +101,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                         {isExpanded ? (
                             <>
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0">
+                                    <div className="w-10 h-10 rounded-full bg-[#0B64F4] flex items-center justify-center text-white shadow-sm flex-shrink-0">
                                         <User size={20} />
                                     </div>
                                     <span className="text-[15px] font-medium text-slate-300 truncate">{authLoading ? '...' : displayName}</span>
@@ -121,7 +121,7 @@ function Sidebar({ isExpanded, setIsExpanded }) {
                             </>
                         ) : (
                             <>
-                                <div className="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white shadow-sm flex-shrink-0 mb-2" title={authLoading ? 'Perfil' : `Perfil de ${displayName}`}>
+                                <div className="w-10 h-10 rounded-full bg-[#0B64F4] flex items-center justify-center text-white shadow-sm flex-shrink-0 mb-2" title={authLoading ? 'Perfil' : `Perfil de ${displayName}`}>
                                     <User size={20} />
                                 </div>
                             </>
